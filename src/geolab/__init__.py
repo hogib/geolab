@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from geolab!")
+from .ellipsoids import Hayford
