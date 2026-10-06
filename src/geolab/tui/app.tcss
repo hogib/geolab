@@ -1,0 +1,174 @@
+/* ratatui-style: flat, square-bordered blocks with titles in the border. */
+
+Screen {
+    layout: vertical;
+    background: ansi_default;  /* transparent: the terminal's own background */
+}
+
+#tabbar {
+    height: 1;
+    padding: 0 1;
+}
+
+#tabs {
+    height: 1fr;
+}
+
+Calculator {
+    height: 1fr;
+}
+
+.block {
+    border: solid $panel-lighten-2;
+    border-title-color: $text-muted;
+    border-subtitle-color: $text-muted;
+    padding: 0 1;
+}
+
+.block:focus, .block:focus-within {
+    border: solid $accent;
+    border-title-color: $accent;
+    border-title-style: bold;
+}
+
+.left {
+    width: 1fr;
+    min-width: 58;
+}
+
+Form {
+    height: auto;
+}
+
+ResultPanel {
+    height: 1fr;
+    padding: 1 1;
+}
+
+ResultPanel.-hint {
+    color: $text-muted;
+}
+
+ResultPanel.-error {
+    color: $error;
+}
+
+WorkingView {
+    display: none;
+    width: 2fr;
+    min-width: 50;
+    height: 1fr;
+}
+
+#tabs.-show-working WorkingView {
+    display: block;
+}
+
+/* ── Fields ── */
+
+Field {
+    height: 1;
+}
+
+Field .marker {
+    width: 2;
+    color: $accent;
+}
+
+Field .field-label {
+    width: 15;
+    color: $text-muted;
+}
+
+Field Input {
+    width: 1fr;
+    height: 1;
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+Field Input:focus {
+    background: $boost;
+}
+
+Field .choice {
+    width: 1fr;
+}
+
+Form:focus Field.-selected {
+    background: $boost;
+}
+
+Form:focus Field.-selected .field-label {
+    color: $text;
+    text-style: bold;
+}
+
+Field.-invalid .field-label, Field.-invalid Input {
+    color: $error;
+}
+
+/* ── Status and echo lines ── */
+
+#statusline {
+    height: 1;
+}
+
+#echo {
+    height: 1;
+}
+
+#cmd-prompt {
+    width: 1;
+    color: $warning;
+    text-style: bold;
+}
+
+#cmdline {
+    width: 1fr;
+    height: 1;
+    border: none;
+    padding: 0;
+    background: transparent;
+}
+
+#message {
+    width: 1fr;
+    padding: 0 1;
+}
+
+/* ── Dialogs ── */
+
+ModalScreen {
+    align: center middle;
+    background: transparent;
+}
+
+.dialog {
+    width: auto;
+    max-width: 90%;
+    height: auto;
+    max-height: 90%;
+    background: $surface;
+    border: solid $accent;
+    border-title-color: $accent;
+    border-title-style: bold;
+}
+
+#ellipsoid-list {
+    width: auto;
+    height: auto;
+    border: none;
+    background: $surface;
+}
+
+HelpScreen .dialog {
+    width: 90;
+    padding: 1 2;
+}
+
+HelpScreen .dialog Static {
+    width: 1fr;
+    height: auto;
+}

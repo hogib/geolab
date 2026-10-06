@@ -78,3 +78,19 @@ class TestTracedCalculations:
         trace = Trace()
         Latitude(0.7, LatType.GEODETIC).convert_to(LatType.GEODETIC, HAYFORD, trace)
         assert trace.entries == []
+
+
+class TestUnits:
+    def test_default_is_dimensionless(self):
+        trace = Trace()
+        trace.step("e²", 0.0067)
+        assert trace.steps[0].unit == ""
+
+    def test_calculations_tag_angles_and_lengths(self):
+        trace = Trace()
+        Geodetic(0.7, 0.5, 100.0).to_cartesian(HAYFORD).to_geodetic(HAYFORD, trace=trace)
+        units = {s.name: s.unit for s in trace.steps}
+        assert units["φ"] == "rad"
+        assert units["λ"] == "rad"
+        assert units["N"] == "m"
+        assert units["h"] == "m"

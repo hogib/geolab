@@ -10,7 +10,12 @@ requires-python = ">=3.12"
 dependencies = []
 
 [project.scripts]
-geolab = "geolab:main"
+geolab = "geolab.tui:main"
+
+[project.optional-dependencies]
+tui = [
+    "textual>=8.2.8",
+]
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]
@@ -19,4 +24,9 @@ build-backend = "uv_build"
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "textual-dev>=1.8.0",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

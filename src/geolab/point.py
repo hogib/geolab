@@ -34,22 +34,22 @@ class Latitude:
         if self.lat_type == LatType.GEOCENTRIC:
             geodetic_rad = math.atan(math.tan(self.value) / (1 - e_sq))
             if trace is not None:
-                trace.step("φ", geodetic_rad, "atan(tan ψ / (1 − e²))")
+                trace.step("φ", geodetic_rad, "atan(tan ψ / (1 − e²))", unit="rad")
         elif self.lat_type == LatType.PARAMETRIC:
             geodetic_rad = math.atan(math.tan(self.value) / math.sqrt(1 - e_sq))
             if trace is not None:
-                trace.step("φ", geodetic_rad, "atan(tan β / √(1 − e²))")
+                trace.step("φ", geodetic_rad, "atan(tan β / √(1 − e²))", unit="rad")
 
         if target_type == LatType.GEODETIC:
             result_rad = geodetic_rad
         elif target_type == LatType.GEOCENTRIC:
             result_rad = math.atan((1 - e_sq) * math.tan(geodetic_rad))
             if trace is not None:
-                trace.step("ψ", result_rad, "atan((1 − e²) tan φ)")
+                trace.step("ψ", result_rad, "atan((1 − e²) tan φ)", unit="rad")
         elif target_type == LatType.PARAMETRIC:
             result_rad = math.atan(math.sqrt(1 - e_sq) * math.tan(geodetic_rad))
             if trace is not None:
-                trace.step("β", result_rad, "atan(√(1 − e²) tan φ)")
+                trace.step("β", result_rad, "atan(√(1 − e²) tan φ)", unit="rad")
 
         return Latitude(result_rad, target_type)
 
@@ -89,22 +89,22 @@ class Cartesian3D:
         lon = math.atan2(self.y, self.x)
         a, b, e_sq = ellipsoid.a, ellipsoid.b, ellipsoid.e_sq
         if trace is not None:
-            trace.step("p", p, "√(X² + Y²)")
-            trace.step("λ", lon, "atan2(Y, X)")
+            trace.step("p", p, "√(X² + Y²)", unit="m")
+            trace.step("λ", lon, "atan2(Y, X)", unit="rad")
 
         if method == GeodeticMethod.ITERATIVE:
             lat = math.atan2(self.z, p * (1 - e_sq))
             if trace is not None:
-                trace.step("φ₀", lat, "atan(Z / (p(1 − e²)))")
+                trace.step("φ₀", lat, "atan(Z / (p(1 − e²)))", unit="rad")
             for i in range(1, max_iter + 1):
                 n = a / math.sqrt(1 - e_sq * math.sin(lat) ** 2)
                 h = p * math.cos(lat) + self.z * math.sin(lat) - a**2 / n
                 new_lat = math.atan2(self.z, p * (1 - e_sq * n / (n + h)))
                 if trace is not None:
                     trace.section(f"Iteration {i}")
-                    trace.step("N", n, "a / √(1 − e² sin²φ)")
-                    trace.step("h", h, "p cos φ + Z sin φ − a²/N")
-                    trace.step("φ", new_lat, "atan(Z / (p(1 − e² N/(N + h))))")
+                    trace.step("N", n, "a / √(1 − e² sin²φ)", unit="m")
+                    trace.step("h", h, "p cos φ + Z sin φ − a²/N", unit="m")
+                    trace.step("φ", new_lat, "atan(Z / (p(1 − e² N/(N + h))))", unit="rad")
                 converged = abs(new_lat - lat) < tol
                 lat = new_lat
                 if converged:
@@ -118,15 +118,15 @@ class Cartesian3D:
                 p - e_sq * a * math.cos(theta) ** 3,
             )
             if trace is not None:
-                trace.step("θ", theta, "atan(Z a / (p b))")
-                trace.step("φ", lat, "atan((Z + e′² b sin³θ) / (p − e² a cos³θ))")
+                trace.step("θ", theta, "atan(Z a / (p b))", unit="rad")
+                trace.step("φ", lat, "atan((Z + e′² b sin³θ) / (p − e² a cos³θ))", unit="rad")
 
         n = a / math.sqrt(1 - e_sq * math.sin(lat) ** 2)
         h = p * math.cos(lat) + self.z * math.sin(lat) - a**2 / n
         if trace is not None:
             trace.section("Result")
-            trace.step("N", n, "a / √(1 − e² sin²φ)")
-            trace.step("h", h, "p cos φ + Z sin φ − a²/N")
+            trace.step("N", n, "a / √(1 − e² sin²φ)", unit="m")
+            trace.step("h", h, "p cos φ + Z sin φ − a²/N", unit="m")
 
         return Geodetic(lat, lon, h)
 
@@ -146,9 +146,9 @@ class Geodetic:
 
         if trace is not None:
             trace.step("e²", ellipsoid.e_sq)
-            trace.step("N", n, "a / √(1 − e² sin²φ)")
-            trace.step("X", x, "(N + h) cos φ cos λ")
-            trace.step("Y", y, "(N + h) cos φ sin λ")
-            trace.step("Z", z, "((1 − e²) N + h) sin φ")
+            trace.step("N", n, "a / √(1 − e² sin²φ)", unit="m")
+            trace.step("X", x, "(N + h) cos φ cos λ", unit="m")
+            trace.step("Y", y, "(N + h) cos φ sin λ", unit="m")
+            trace.step("Z", z, "((1 − e²) N + h) sin φ", unit="m")
 
         return Cartesian3D(x, y, z)

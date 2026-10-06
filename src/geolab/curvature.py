@@ -16,7 +16,7 @@ def meridian_radius(lat: float, ellipsoid: Ellipsoid, trace: Trace | None = None
     m = ellipsoid.a * (1 - ellipsoid.e_sq) / w**3
     if trace is not None:
         trace.step("W", w, "√(1 − e² sin²φ)")
-        trace.step("M", m, "a(1 − e²) / W³")
+        trace.step("M", m, "a(1 − e²) / W³", unit="m")
     return m
 
 
@@ -26,7 +26,7 @@ def prime_vertical_radius(lat: float, ellipsoid: Ellipsoid, trace: Trace | None 
     n = ellipsoid.a / w
     if trace is not None:
         trace.step("W", w, "√(1 − e² sin²φ)")
-        trace.step("N", n, "a / W")
+        trace.step("N", n, "a / W", unit="m")
     return n
 
 
@@ -35,7 +35,7 @@ def parallel_radius(lat: float, ellipsoid: Ellipsoid, trace: Trace | None = None
     n = prime_vertical_radius(lat, ellipsoid, trace)
     r = n * math.cos(lat)
     if trace is not None:
-        trace.step("r", r, "N cos φ")
+        trace.step("r", r, "N cos φ", unit="m")
     return r
 
 
@@ -45,7 +45,7 @@ def gaussian_mean_radius(lat: float, ellipsoid: Ellipsoid, trace: Trace | None =
     n = prime_vertical_radius(lat, ellipsoid, trace)
     r = math.sqrt(m * n)
     if trace is not None:
-        trace.step("R", r, "√(MN)")
+        trace.step("R", r, "√(MN)", unit="m")
     return r
 
 
@@ -57,5 +57,5 @@ def azimuth_radius(
     n = prime_vertical_radius(lat, ellipsoid, trace)
     r = m * n / (n * math.cos(azimuth) ** 2 + m * math.sin(azimuth) ** 2)
     if trace is not None:
-        trace.step("Rα", r, "MN / (N cos²α + M sin²α)")
+        trace.step("Rα", r, "MN / (N cos²α + M sin²α)", unit="m")
     return r

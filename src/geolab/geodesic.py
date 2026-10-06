@@ -65,9 +65,9 @@ def inverse(
 
     if trace is not None:
         trace.section("Setup")
-        trace.step("L", L, "λ₂ − λ₁")
-        trace.step("U₁", u1, "atan((1 − f) tan φ₁)")
-        trace.step("U₂", u2, "atan((1 − f) tan φ₂)")
+        trace.step("L", L, "λ₂ − λ₁", unit="rad")
+        trace.step("U₁", u1, "atan((1 − f) tan φ₁)", unit="rad")
+        trace.step("U₂", u2, "atan((1 − f) tan φ₂)", unit="rad")
 
     lam = L
     for i in range(1, max_iter + 1):
@@ -76,7 +76,7 @@ def inverse(
         if sin_sigma == 0:
             if trace is not None:
                 trace.section("Coincident points")
-                trace.step("s", 0.0)
+                trace.step("s", 0.0, unit="m")
             return InverseResult(0.0, 0.0, 0.0, i)
         cos_sigma = sin_u1 * sin_u2 + cos_u1 * cos_u2 * cos_lam
         sigma = math.atan2(sin_sigma, cos_sigma)
@@ -93,12 +93,12 @@ def inverse(
             trace.section(f"Iteration {i}")
             trace.step("sin σ", sin_sigma, "√((cos U₂ sin λ)² + (cos U₁ sin U₂ − sin U₁ cos U₂ cos λ)²)")
             trace.step("cos σ", cos_sigma, "sin U₁ sin U₂ + cos U₁ cos U₂ cos λ")
-            trace.step("σ", sigma, "atan2(sin σ, cos σ)")
+            trace.step("σ", sigma, "atan2(sin σ, cos σ)", unit="rad")
             trace.step("sin α", sin_alpha, "cos U₁ cos U₂ sin λ / sin σ")
             trace.step("cos²α", cos_sq_alpha, "1 − sin²α")
             trace.step("cos 2σm", cos_2sigma_m, "cos σ − 2 sin U₁ sin U₂ / cos²α")
             trace.step("C", c, "f/16 cos²α (4 + f(4 − 3 cos²α))")
-            trace.step("λ", new_lam, "L + (1 − C) f sin α (σ + C sin σ (cos 2σm + C cos σ (−1 + 2 cos² 2σm)))")
+            trace.step("λ", new_lam, "L + (1 − C) f sin α (σ + C sin σ (cos 2σm + C cos σ (−1 + 2 cos² 2σm)))", unit="rad")
 
         if abs(new_lam) > math.pi:
             raise ConvergenceError("λ exceeded π: points are nearly antipodal")
@@ -131,10 +131,10 @@ def inverse(
         trace.step("u²", u_sq, "cos²α (a² − b²) / b²")
         trace.step("A", big_a, "1 + u²/16384 (4096 + u²(−768 + u²(320 − 175u²)))")
         trace.step("B", big_b, "u²/1024 (256 + u²(−128 + u²(74 − 47u²)))")
-        trace.step("Δσ", delta_sigma, _DELTA_SIGMA_FORMULA)
-        trace.step("s", s, "b A (σ − Δσ)")
-        trace.step("α₁", alpha1, "atan2(cos U₂ sin λ, cos U₁ sin U₂ − sin U₁ cos U₂ cos λ)")
-        trace.step("α₂", alpha2, "atan2(cos U₁ sin λ, −sin U₁ cos U₂ + cos U₁ sin U₂ cos λ)")
+        trace.step("Δσ", delta_sigma, _DELTA_SIGMA_FORMULA, unit="rad")
+        trace.step("s", s, "b A (σ − Δσ)", unit="m")
+        trace.step("α₁", alpha1, "atan2(cos U₂ sin λ, cos U₁ sin U₂ − sin U₁ cos U₂ cos λ)", unit="rad")
+        trace.step("α₂", alpha2, "atan2(cos U₁ sin λ, −sin U₁ cos U₂ + cos U₁ sin U₂ cos λ)", unit="rad")
 
     return InverseResult(s, alpha1, alpha2, i)
 
@@ -164,14 +164,14 @@ def direct(
 
     if trace is not None:
         trace.section("Setup")
-        trace.step("U₁", u1, "atan((1 − f) tan φ₁)")
-        trace.step("σ₁", sigma1, "atan2(tan U₁, cos α₁)")
+        trace.step("U₁", u1, "atan((1 − f) tan φ₁)", unit="rad")
+        trace.step("σ₁", sigma1, "atan2(tan U₁, cos α₁)", unit="rad")
         trace.step("sin α", sin_alpha, "cos U₁ sin α₁")
         trace.step("cos²α", cos_sq_alpha, "1 − sin²α")
         trace.step("u²", u_sq, "cos²α (a² − b²) / b²")
         trace.step("A", big_a, "1 + u²/16384 (4096 + u²(−768 + u²(320 − 175u²)))")
         trace.step("B", big_b, "u²/1024 (256 + u²(−128 + u²(74 − 47u²)))")
-        trace.step("σ", sigma0, "s / (b A)")
+        trace.step("σ", sigma0, "s / (b A)", unit="rad")
 
     sigma = sigma0
     for i in range(1, max_iter + 1):
@@ -182,8 +182,8 @@ def direct(
         if trace is not None:
             trace.section(f"Iteration {i}")
             trace.step("cos 2σm", cos_2sigma_m, "cos(2σ₁ + σ)")
-            trace.step("Δσ", delta_sigma, _DELTA_SIGMA_FORMULA)
-            trace.step("σ", new_sigma, "s / (b A) + Δσ")
+            trace.step("Δσ", delta_sigma, _DELTA_SIGMA_FORMULA, unit="rad")
+            trace.step("σ", new_sigma, "s / (b A) + Δσ", unit="rad")
 
         converged = abs(new_sigma - sigma) < tol
         sigma = new_sigma
@@ -209,12 +209,12 @@ def direct(
 
     if trace is not None:
         trace.section("Result")
-        trace.step("φ₂", lat2, "atan2(sin U₁ cos σ + cos U₁ sin σ cos α₁, (1 − f)√(sin²α + (sin U₁ sin σ − cos U₁ cos σ cos α₁)²))")
-        trace.step("λ", lam, "atan2(sin σ sin α₁, cos U₁ cos σ − sin U₁ sin σ cos α₁)")
+        trace.step("φ₂", lat2, "atan2(sin U₁ cos σ + cos U₁ sin σ cos α₁, (1 − f)√(sin²α + (sin U₁ sin σ − cos U₁ cos σ cos α₁)²))", unit="rad")
+        trace.step("λ", lam, "atan2(sin σ sin α₁, cos U₁ cos σ − sin U₁ sin σ cos α₁)", unit="rad")
         trace.step("C", c, "f/16 cos²α (4 + f(4 − 3 cos²α))")
-        trace.step("L", L, "λ − (1 − C) f sin α (σ + C sin σ (cos 2σm + C cos σ (−1 + 2 cos² 2σm)))")
-        trace.step("λ₂", lon2, "λ₁ + L")
-        trace.step("α₂", alpha2, "atan2(sin α, −sin U₁ sin σ + cos U₁ cos σ cos α₁)")
+        trace.step("L", L, "λ − (1 − C) f sin α (σ + C sin σ (cos 2σm + C cos σ (−1 + 2 cos² 2σm)))", unit="rad")
+        trace.step("λ₂", lon2, "λ₁ + L", unit="rad")
+        trace.step("α₂", alpha2, "atan2(sin α, −sin U₁ sin σ + cos U₁ cos σ cos α₁)", unit="rad")
 
     return DirectResult(lat2, lon2, alpha2, i)
 

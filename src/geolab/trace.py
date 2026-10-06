@@ -6,6 +6,8 @@ class Step:
     name: str
     value: float
     formula: str = ""
+    unit: str = ""
+    """Unit of ``value``: "rad" for angles, "m" for lengths, empty if dimensionless."""
 
 
 @dataclass(frozen=True)
@@ -22,8 +24,8 @@ class Trace:
 
     entries: list[Step | Section] = field(default_factory=list)
 
-    def step(self, name: str, value: float, formula: str = "") -> float:
-        self.entries.append(Step(name, value, formula))
+    def step(self, name: str, value: float, formula: str = "", unit: str = "") -> float:
+        self.entries.append(Step(name, value, formula, unit))
         return value
 
     def section(self, title: str) -> None:
