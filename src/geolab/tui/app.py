@@ -1,4 +1,5 @@
 from enum import Enum, auto
+from pathlib import Path
 
 from rich.text import Text
 from textual import events
@@ -10,6 +11,7 @@ from textual.timer import Timer
 from textual.widgets import ContentSwitcher, Input, Static
 
 from ..angles import AngleUnit
+from ..config import ellipsoids_path, load_ellipsoids, save_ellipsoids
 from ..ellipsoids import ELLIPSOIDS, WGS84, Ellipsoid
 from .calculator import Calculator
 from .commands import (
@@ -23,6 +25,7 @@ from .commands import (
 from .convert import EcefToGeodetic, GeodeticToEcef, LatitudeConverter
 from .ellipsoid_tab import EllipsoidEditor
 from .problems import DirectProblem, InverseProblem, RadiiCalculator
+from .worldmap import MapTab
 from .screens import EllipsoidPicker, HelpScreen
 from .widgets import ChoiceField, CommandLine, Form, ResultPanel, WorkingView
 
@@ -34,6 +37,7 @@ TABS: list[tuple[str, type[Calculator]]] = [
     ("Direct", DirectProblem),
     ("Radii", RadiiCalculator),
     ("Ellipsoid", EllipsoidEditor),
+    ("Map", MapTab),
 ]
 UNIT_NAMES = {AngleUnit.DMS: "DMS", AngleUnit.DEGREES: "DEG", AngleUnit.RADIANS: "RAD"}
 
@@ -78,10 +82,12 @@ class GeolabApp(App):
     mode: reactive[Mode] = reactive(Mode.NORMAL, init=False)
     tab: reactive[int] = reactive(0, init=False)
 
-    def __init__(self) -> None:
+    def __init__(self, config_path: Path | None = None) -> None:
         # Pass the terminal's default colours through, so its background shows (transparency).
         super().__init__(ansi_color=True)
+        self.config_path = config_path or ellipsoids_path()
         self.ellipsoids: dict[str, Ellipsoid] = dict(ELLIPSOIDS)
+        self._startup_warnings = self._load_custom_ellipsoids()
         self.last_yank = ""
         self.last_message = ""
         self._pending_g = False
@@ -105,6 +111,45 @@ class GeolabApp(App):
         self._render_tabbar()
         self._render_status()
         self.active_calculator.form.focus()
+        if self._startup_warnings:
+            self.flash("; ".join(self._startup_warnings), error=True)
+
+    # ── Custom ellipsoids ────────────────────────────────────────────────────
+
+    @property
+    def custom_ellipsoids(self) -> list[Ellipsoid]:
+        return [e for name, e in self.ellipsoids.items() if name not in ELLIPSOIDS]
+
+    def _load_custom_ellipsoids(self) -> list[str]:
+        loaded, warnings = load_ellipsoids(self.config_path)
+        builtin_keys = {normalise(name): name for name in ELLIPSOIDS}
+        for ellipsoid in loaded:
+            builtin = builtin_keys.get(normalise(ellipsoid.name))
+            if builtin is not None:
+                warnings.append(f"skipped custom ellipsoid {ellipsoid.name!r}: clashes with {builtin}")
+                continue
+            self.ellipsoids[ellipsoid.name] = ellipsoid
+        return warnings
+
+    def _save_custom_ellipsoids(self) -> bool:
+        try:
+            save_ellipsoids(self.custom_ellipsoids, self.config_path)
+        except OSError as exc:
+            self.flash(f"could not save {self.config_path}: {exc}", error=True)
+            return False
+        return True
+
+    def remove_ellipsoid(self, name: str) -> bool:
+        """Delete a custom ellipsoid. Built-in ones cannot be removed."""
+        if name in ELLIPSOIDS:
+            self.flash(f"{name} is built in and can't be deleted", error=True)
+            return False
+        del self.ellipsoids[name]
+        if self.ellipsoid.name == name:
+            self.ellipsoid = WGS84
+        if self._save_custom_ellipsoids():
+            self.flash(f"deleted ellipsoid {name}")
+        return True
 
     # ── State ────────────────────────────────────────────────────────────────
 
@@ -117,6 +162,7 @@ class GeolabApp(App):
         self._render_tabbar()
         self._render_status()
         self.active_calculator.form.focus()
+        self.active_calculator.activated()
 
     def watch_mode(self, mode: Mode) -> None:
         commanding = mode == Mode.COMMAND
@@ -295,7 +341,10 @@ class GeolabApp(App):
             del self.ellipsoids[name]
         self.ellipsoids[ellipsoid.name] = ellipsoid
         self.ellipsoid = ellipsoid
-        self.flash(f"using ellipsoid {ellipsoid.name}")
+        if ellipsoid.name in ELLIPSOIDS:
+            self.flash(f"using ellipsoid {ellipsoid.name}")
+        elif self._save_custom_ellipsoids():
+            self.flash(f"using ellipsoid {ellipsoid.name} (saved)")
 
     def action_yank(self, all_rows: bool) -> None:
         panel = self.active_calculator.query_one(ResultPanel)

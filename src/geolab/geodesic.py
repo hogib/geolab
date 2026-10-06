@@ -248,3 +248,25 @@ def _delta_sigma(big_b: float, sin_sigma: float, cos_sigma: float, cos_2sigma_m:
 
 def _azimuth(angle: float) -> float:
     return angle % math.tau
+
+
+def geodesic_points(
+    lat1: float,
+    lon1: float,
+    azimuth1: float,
+    distance: float,
+    ellipsoid: Ellipsoid,
+    count: int = 100,
+) -> list[tuple[float, float]]:
+    """``count + 1`` evenly spaced (lat, lon) points along a geodesic, both ends included.
+
+    Each point is a direct-problem solution from point 1, so the path follows
+    the ellipsoidal geodesic rather than a straight line on the map.
+    """
+    if count < 1:
+        raise ValueError("count must be at least 1")
+    points = [(lat1, math.remainder(lon1, math.tau))]
+    for i in range(1, count + 1):
+        r = direct(lat1, lon1, azimuth1, distance * i / count, ellipsoid)
+        points.append((r.lat2, r.lon2))
+    return points

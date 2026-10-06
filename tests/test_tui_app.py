@@ -17,6 +17,7 @@ from geolab import (  # noqa: E402
     meridian_radius,
     parse_angle,
 )
+from geolab.config import save_ellipsoids  # noqa: E402
 from geolab.tui.app import GeolabApp, Mode  # noqa: E402
 from geolab.tui.screens import EllipsoidPicker, HelpScreen  # noqa: E402
 from geolab.tui.widgets import (  # noqa: E402
@@ -177,7 +178,7 @@ class TestTabs:
 
     async def test_brackets_wrap(self, pilot):
         await pilot.press("left_square_bracket")
-        assert pilot.app.tab == 6
+        assert pilot.app.tab == 7
         await pilot.press("right_square_bracket")
         assert pilot.app.tab == 0
 
@@ -522,7 +523,7 @@ class TestEllipsoidTab:
         app = pilot.app
         assert app.ellipsoid == Ellipsoid("Mine", 6378000.0, 298.257223563)
         assert "Mine" in app.ellipsoids
-        assert app.last_message == "using ellipsoid Mine"
+        assert app.last_message == "using ellipsoid Mine (saved)"
 
     async def test_custom_ellipsoid_used_by_other_tabs(self, pilot):
         await pilot.press("7", "c", *"Mine", "enter", "c", *"6000000", "enter", "s", "1")
@@ -579,3 +580,74 @@ class TestEllipsoidTab:
     async def test_s_does_nothing_on_other_tabs(self, pilot):
         await pilot.press("s")
         assert pilot.app.ellipsoid is WGS84
+
+
+class TestPersistence:
+    async def test_saving_writes_config_file(self, pilot, isolated_config):
+        await pilot.press("7", "c", *"Mine", "enter", "c", *"6378000", "escape", "s")
+        await pilot.pause()
+        text = (isolated_config / "ellipsoids.toml").read_text()
+        assert 'name = "Mine"' in text and "a = 6378000.0" in text
+
+    async def test_only_custom_ellipsoids_are_saved(self, pilot, isolated_config):
+        await pilot.press("7", "c", *"Mine", "escape", "s")
+        await pilot.pause()
+        text = (isolated_config / "ellipsoids.toml").read_text()
+        assert text.count("[[ellipsoid]]") == 1
+
+    async def test_loaded_at_startup(self, isolated_config):
+        save_ellipsoids([Ellipsoid("Mine", 6378000.0, 300.0)], isolated_config / "ellipsoids.toml")
+        app = GeolabApp()
+        async with app.run_test(size=(130, 40)) as pilot:
+            await pilot.pause()
+            assert app.ellipsoids["Mine"] == Ellipsoid("Mine", 6378000.0, 300.0)
+            assert app.ellipsoid is WGS84  # loading does not change the active ellipsoid
+
+    async def test_clash_with_builtin_is_skipped_with_warning(self, isolated_config):
+        save_ellipsoids(
+            [Ellipsoid("wgs 84", 6000000.0, 300.0), Ellipsoid("Mine", 6378000.0, 300.0)],
+            isolated_config / "ellipsoids.toml",
+        )
+        app = GeolabApp()
+        async with app.run_test(size=(130, 40)) as pilot:
+            await pilot.pause()
+            assert "wgs 84" not in app.ellipsoids
+            assert "Mine" in app.ellipsoids
+            assert "clashes with WGS84" in app.last_message
+
+    async def test_bad_file_does_not_stop_startup(self, isolated_config):
+        isolated_config.mkdir(parents=True)
+        (isolated_config / "ellipsoids.toml").write_text("not [valid")
+        app = GeolabApp()
+        async with app.run_test(size=(130, 40)) as pilot:
+            await pilot.pause()
+            assert app.is_running
+            assert "could not read" in app.last_message
+
+    async def test_delete_in_picker(self, isolated_config):
+        save_ellipsoids([Ellipsoid("Mine", 6378000.0, 300.0)], isolated_config / "ellipsoids.toml")
+        app = GeolabApp()
+        async with app.run_test(size=(130, 40)) as pilot:
+            await run(pilot, "ell mine")
+            await pilot.press("e", "d")
+            await pilot.pause()
+            assert "Mine" not in app.ellipsoids
+            assert app.ellipsoid is WGS84
+            assert "Mine" not in (isolated_config / "ellipsoids.toml").read_text()
+            assert len(app.screen.query_one("#ellipsoid-list").options) == 6
+
+    async def test_builtin_cannot_be_deleted(self, pilot):
+        await pilot.press("e", "d")
+        await pilot.pause()
+        assert "WGS84" in pilot.app.ellipsoids
+        assert "can't be deleted" in pilot.app.last_message
+
+    async def test_unwritable_config_keeps_ellipsoid_for_session(self, tmp_path):
+        blocker = tmp_path / "file"
+        blocker.write_text("")
+        app = GeolabApp(config_path=blocker / "ellipsoids.toml")  # parent is a file
+        async with app.run_test(size=(130, 40)) as pilot:
+            await pilot.press("7", "c", *"Mine", "escape", "s")
+            await pilot.pause()
+            assert app.ellipsoid.name == "Mine"
+            assert "could not save" in app.last_message

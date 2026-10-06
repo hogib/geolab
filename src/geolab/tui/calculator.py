@@ -56,10 +56,14 @@ class Calculator(Horizontal):
     def on_mount(self) -> None:
         self.form.border_title = f"Input · {self.TITLE}"
         self.query_one(ResultPanel).border_title = "Result"
-        self.query_one(WorkingView).border_title = "Working"
+        for view in self.query(WorkingView):
+            view.border_title = "Working"
         self.watch(self.app, "ellipsoid", lambda: self.ellipsoid_changed(), init=False)
         self.watch(self.app, "angle_unit", lambda: self.recalculate(), init=False)
         self.recalculate()
+
+    def activated(self) -> None:
+        """Called when the tab becomes the active one."""
 
     def ellipsoid_changed(self) -> None:
         self.recalculate()
@@ -102,17 +106,16 @@ class Calculator(Horizontal):
 
     def recalculate(self) -> None:
         results = self.query_one(ResultPanel)
-        working = self.query_one(WorkingPanel)
+        working = next(iter(self.query(WorkingPanel)), None)
         trace = Trace()
         try:
             rows = self.calculate(trace)
         except FieldError as exc:
             results.show_message(str(exc), error=not exc.empty)
-            working.show(Trace())
-            return
+            trace = Trace()
         except (ValueError, ArithmeticError) as exc:
             results.show_message(str(exc), error=True)
+        else:
+            results.show(rows)
+        if working is not None:
             working.show(trace)
-            return
-        results.show(rows)
-        working.show(trace)

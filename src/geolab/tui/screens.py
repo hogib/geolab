@@ -20,9 +20,15 @@ class VimOptionList(OptionList):
 
 
 class EllipsoidPicker(ModalScreen[str | None]):
-    """Pick an ellipsoid with j/k and Enter. Returns its name, or None if cancelled."""
+    """Pick an ellipsoid with j/k and Enter. Returns its name, or None if cancelled.
 
-    BINDINGS = [Binding("escape,q", "dismiss(None)", "Cancel", show=False)]
+    ``d`` deletes the highlighted custom ellipsoid.
+    """
+
+    BINDINGS = [
+        Binding("escape,q", "dismiss(None)", "Cancel", show=False),
+        Binding("d", "delete", "Delete", show=False),
+    ]
 
     def __init__(self, current: str, ellipsoids: dict[str, Ellipsoid]):
         super().__init__()
@@ -44,13 +50,22 @@ class EllipsoidPicker(ModalScreen[str | None]):
 
     def on_mount(self) -> None:
         self.query_one(".dialog").border_title = "Ellipsoid"
-        self.query_one(".dialog").border_subtitle = "j/k move · enter select · esc cancel"
+        self.query_one(".dialog").border_subtitle = "j/k move · enter select · d delete · esc cancel"
         option_list = self.query_one(VimOptionList)
         option_list.highlighted = list(self.ellipsoids).index(self.current)
         option_list.focus()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         self.dismiss(event.option.id)
+
+    def action_delete(self) -> None:
+        option_list = self.query_one(VimOptionList)
+        if option_list.highlighted is None:
+            return
+        name = option_list.get_option_at_index(option_list.highlighted).id
+        assert name is not None
+        if self.app.remove_ellipsoid(name):  # type: ignore[attr-defined]
+            option_list.remove_option(name)
 
 
 HELP = [
@@ -59,7 +74,7 @@ HELP = [
         ("i  a  enter", "edit the selected field"),
         ("c", "clear the field and edit it"),
         ("h / l  space", "cycle an option field"),
-        ("1 – 7", "switch tab"),
+        ("1 – 8", "switch tab"),
         ("gt / gT  ] / [", "next / previous tab"),
         ("tab / shift+tab", "move between Input, Result and Working"),
         ("y / Y", "copy the selected result / all results"),
@@ -76,6 +91,14 @@ HELP = [
     ]),
     ("Ellipsoid tab", [
         ("s  :w  :save", "save the edited parameters as a custom ellipsoid and use it"),
+        ("", "custom ellipsoids are kept in ~/.config/geolab/ellipsoids.toml"),
+        ("d (in the picker)", "delete a custom ellipsoid"),
+    ]),
+    ("Map tab (World block)", [
+        ("h j k l  arrows", "pan"),
+        ("+ / -", "zoom in / out"),
+        ("f", "fit the view to the points"),
+        ("0", "whole world"),
     ]),
     ("Result / Working blocks", [
         ("j / k", "select a result / scroll"),
