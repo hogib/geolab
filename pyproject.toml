@@ -7,10 +7,7 @@ authors = [
     { name = "Oguzb", email = "hoguzbolat@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = [
-    "numpy>=2.5.3",
-    "scipy>=1.18.1",
-]
+dependencies = []
 
 [project.scripts]
 geolab = "geolab:main"
@@ -18,3 +15,8 @@ geolab = "geolab:main"
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
