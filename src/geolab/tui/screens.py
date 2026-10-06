@@ -7,7 +7,7 @@ from textual.screen import ModalScreen
 from textual.widgets import OptionList, Static
 from textual.widgets.option_list import Option
 
-from ..ellipsoids import ELLIPSOIDS
+from ..ellipsoids import ELLIPSOIDS, Ellipsoid
 
 
 class VimOptionList(OptionList):
@@ -24,16 +24,19 @@ class EllipsoidPicker(ModalScreen[str | None]):
 
     BINDINGS = [Binding("escape,q", "dismiss(None)", "Cancel", show=False)]
 
-    def __init__(self, current: str):
+    def __init__(self, current: str, ellipsoids: dict[str, Ellipsoid]):
         super().__init__()
         self.current = current
+        self.ellipsoids = ellipsoids
 
     def compose(self) -> ComposeResult:
         options = []
-        for name, ell in ELLIPSOIDS.items():
+        width = max(12, *(len(n) for n in self.ellipsoids))
+        for name, ell in self.ellipsoids.items():
             label = Text.assemble(
-                (f"{name:<12}", "bold"),
+                (f"{name:<{width}}", "bold"),
                 (f"  a = {ell.a:>13,.3f} m   1/f = {ell.inv_f}".replace(",", " "), "dim"),
+                ("" if name in ELLIPSOIDS else "   custom", "italic"),
             )
             options.append(Option(label, id=name))
         with Vertical(classes="block dialog"):
@@ -43,7 +46,7 @@ class EllipsoidPicker(ModalScreen[str | None]):
         self.query_one(".dialog").border_title = "Ellipsoid"
         self.query_one(".dialog").border_subtitle = "j/k move · enter select · esc cancel"
         option_list = self.query_one(VimOptionList)
-        option_list.highlighted = list(ELLIPSOIDS).index(self.current)
+        option_list.highlighted = list(self.ellipsoids).index(self.current)
         option_list.focus()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
@@ -56,7 +59,7 @@ HELP = [
         ("i  a  enter", "edit the selected field"),
         ("c", "clear the field and edit it"),
         ("h / l  space", "cycle an option field"),
-        ("1 – 9", "switch tab"),
+        ("1 – 7", "switch tab"),
         ("gt / gT  ] / [", "next / previous tab"),
         ("tab / shift+tab", "move between Input, Result and Working"),
         ("y / Y", "copy the selected result / all results"),
@@ -71,6 +74,9 @@ HELP = [
         ("esc", "back to normal mode"),
         ("enter", "confirm and move to the next field"),
     ]),
+    ("Ellipsoid tab", [
+        ("s  :w  :save", "save the edited parameters as a custom ellipsoid and use it"),
+    ]),
     ("Result / Working blocks", [
         ("j / k", "select a result / scroll"),
         ("g / G  ctrl+d / ctrl+u", "top / bottom, page down / up"),
@@ -81,6 +87,7 @@ HELP = [
         (":units <dms|deg|rad>", "set the angle units"),
         (":method <name>", "set the method where there is one, e.g. :method bowring"),
         (":working", "show or hide the working"),
+        (":save  :w", "save a custom ellipsoid (Ellipsoid tab)"),
         (":<n>  :tab <n>", "switch to tab n"),
         (":help  :q", "help, quit"),
     ]),

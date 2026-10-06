@@ -59,6 +59,16 @@ class TestEllipsoid:
         with pytest.raises(TypeError):
             Ellipsoid("Custom", 6378137.0, 298.257223563, f=0.1)
 
+    @pytest.mark.parametrize("a", [0.0, -1.0, float("nan")])
+    def test_rejects_non_positive_a(self, a):
+        with pytest.raises(ValueError, match="semi-major"):
+            Ellipsoid("Bad", a, 298.0)
+
+    @pytest.mark.parametrize("inv_f", [-298.0, 0.5, 1.0, float("nan")])
+    def test_rejects_invalid_inverse_flattening(self, inv_f):
+        with pytest.raises(ValueError, match="inverse flattening"):
+            Ellipsoid("Bad", 6378137.0, inv_f)
+
     def test_is_frozen(self):
         ell = Ellipsoid("Custom", 6378137.0, 298.257223563)
         with pytest.raises(dataclasses.FrozenInstanceError):

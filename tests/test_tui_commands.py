@@ -87,7 +87,7 @@ class TestMatchUnit:
 
 class TestCompletions:
     def test_all_commands(self):
-        assert completions("") == ["ell ", "help", "method ", "q", "tab ", "units ", "working"]
+        assert completions("") == ["ell ", "help", "method ", "q", "save", "tab ", "units ", "working"]
 
     def test_command_prefix(self):
         assert completions("u") == ["units "]
@@ -117,3 +117,16 @@ class TestCompletions:
 
     def test_commands_without_arguments(self):
         assert completions("help x") == []
+
+
+class TestCustomRegistry:
+    def test_match_in_given_registry(self):
+        mine = Ellipsoid("Mine", 6378000.0, 300.0)
+        assert match_ellipsoid("mi", {"WGS84": WGS84, "Mine": mine}) is mine
+
+    def test_unknown_lists_given_registry(self):
+        with pytest.raises(CommandError, match="Mine"):
+            match_ellipsoid("zz", {"Mine": Ellipsoid("Mine", 6378000.0, 300.0)})
+
+    def test_completion_with_given_names(self):
+        assert completions("ell m", ellipsoid_names=["WGS84", "Mine"]) == ["ell Mine"]

@@ -12,8 +12,17 @@ from textual.widgets import ContentSwitcher, Input, Static
 from ..angles import AngleUnit
 from ..ellipsoids import ELLIPSOIDS, WGS84, Ellipsoid
 from .calculator import Calculator
-from .commands import CommandError, completions, match_ellipsoid, match_unit, split_command
+from .commands import (
+    CommandError,
+    completions,
+    match_ellipsoid,
+    match_unit,
+    normalise,
+    split_command,
+)
 from .convert import EcefToGeodetic, GeodeticToEcef, LatitudeConverter
+from .ellipsoid_tab import EllipsoidEditor
+from .problems import DirectProblem, InverseProblem, RadiiCalculator
 from .screens import EllipsoidPicker, HelpScreen
 from .widgets import ChoiceField, CommandLine, Form, ResultPanel, WorkingView
 
@@ -21,6 +30,10 @@ TABS: list[tuple[str, type[Calculator]]] = [
     ("Geo→ECEF", GeodeticToEcef),
     ("ECEF→Geo", EcefToGeodetic),
     ("Latitudes", LatitudeConverter),
+    ("Inverse", InverseProblem),
+    ("Direct", DirectProblem),
+    ("Radii", RadiiCalculator),
+    ("Ellipsoid", EllipsoidEditor),
 ]
 UNIT_NAMES = {AngleUnit.DMS: "DMS", AngleUnit.DEGREES: "DEG", AngleUnit.RADIANS: "RAD"}
 
@@ -68,6 +81,7 @@ class GeolabApp(App):
     def __init__(self) -> None:
         # Pass the terminal's default colours through, so its background shows (transparency).
         super().__init__(ansi_color=True)
+        self.ellipsoids: dict[str, Ellipsoid] = dict(ELLIPSOIDS)
         self.last_yank = ""
         self.last_message = ""
         self._pending_g = False
@@ -177,7 +191,7 @@ class GeolabApp(App):
             if field.key == "method" and isinstance(field, ChoiceField)
             for label, _ in field.options
         ]
-        return completions(text, methods, len(TABS))
+        return completions(text, methods, len(TABS), list(self.ellipsoids))
 
     def on_resize(self) -> None:
         self._render_status()
@@ -265,9 +279,23 @@ class GeolabApp(App):
     def action_pick_ellipsoid(self) -> None:
         def picked(name: str | None) -> None:
             if name is not None:
-                self.ellipsoid = ELLIPSOIDS[name]
+                self.ellipsoid = self.ellipsoids[name]
 
-        self.push_screen(EllipsoidPicker(self.ellipsoid.name), picked)
+        self.push_screen(EllipsoidPicker(self.ellipsoid.name, self.ellipsoids), picked)
+
+    def add_ellipsoid(self, ellipsoid: Ellipsoid) -> None:
+        """Register a custom ellipsoid (replacing one of the same name) and use it."""
+        key = normalise(ellipsoid.name)
+        for name, existing in list(self.ellipsoids.items()):
+            if normalise(name) != key:
+                continue
+            if name in ELLIPSOIDS and existing != ellipsoid:
+                self.flash(f"{name} is a built-in ellipsoid: choose another name", error=True)
+                return
+            del self.ellipsoids[name]
+        self.ellipsoids[ellipsoid.name] = ellipsoid
+        self.ellipsoid = ellipsoid
+        self.flash(f"using ellipsoid {ellipsoid.name}")
 
     def action_yank(self, all_rows: bool) -> None:
         panel = self.active_calculator.query_one(ResultPanel)
@@ -318,13 +346,13 @@ class GeolabApp(App):
             return
         if name.isdigit():
             self.action_tab(int(name) - 1)
-        elif name in ("q", "q!", "qa", "quit", "x", "wq"):
+        elif name in ("q", "q!", "qa", "quit", "x"):
             self.exit()
         elif name in ("ell", "ellipsoid"):
             if not args:
                 self.action_pick_ellipsoid()
                 return
-            self.ellipsoid = match_ellipsoid(" ".join(args))
+            self.ellipsoid = match_ellipsoid(" ".join(args), self.ellipsoids)
             self.flash(f"ellipsoid: {self.ellipsoid.name}")
         elif name in ("units", "unit"):
             if not args:
@@ -332,6 +360,11 @@ class GeolabApp(App):
             self.angle_unit = match_unit(args[0])
         elif name == "method":
             self._set_choice("method", args)
+        elif name in ("save", "w"):
+            save = getattr(self.active_calculator, "action_save", None)
+            if save is None:
+                raise CommandError("nothing to save on this tab")
+            save()
         elif name in ("working", "work"):
             self.action_toggle_working()
         elif name == "tab":

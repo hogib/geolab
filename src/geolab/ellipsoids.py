@@ -20,7 +20,12 @@ class Ellipsoid:
     n: float = field(init=False)
 
     def __post_init__(self):
-        calc_f = 1.0 / self.inv_f if self.inv_f != 0 else 0.0
+        if not self.a > 0:
+            raise ValueError("semi-major axis a must be positive")
+        if self.inv_f != 0 and not self.inv_f > 1:
+            raise ValueError("inverse flattening must be greater than 1 (or 0 for a sphere)")
+
+        calc_f =1.0 / self.inv_f if self.inv_f != 0 else 0.0
         calc_b = self.a * (1.0 - calc_f)
         calc_e_sq = 2 * calc_f - calc_f**2
         calc_ep_sq = calc_e_sq / (1 - calc_e_sq)

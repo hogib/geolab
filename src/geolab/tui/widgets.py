@@ -78,10 +78,10 @@ class TextField(Field):
     def value(self, text: str) -> None:
         self.input.value = text
 
-    def parse_value(self, text: str) -> float:
+    def parse_value(self, text: str) -> Any:
         raise NotImplementedError
 
-    def parse(self) -> float:
+    def parse(self) -> Any:
         """The field's value; raises FieldError if it is empty or invalid."""
         name = " ".join(self.label.split())
         if not self.value.strip():
@@ -115,6 +115,11 @@ class NumberField(TextField):
             return float(text)
         except ValueError:
             raise ValueError("not a number") from None
+
+
+class StringField(TextField):
+    def parse_value(self, text: str) -> str:
+        return text.strip()
 
 
 class ChoiceField(Field):

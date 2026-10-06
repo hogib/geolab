@@ -1,7 +1,7 @@
 """Parsing for the ``:`` command line. Kept free of Textual so it is easy to test."""
 
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from ..angles import AngleUnit
 from ..ellipsoids import ELLIPSOIDS, Ellipsoid
@@ -29,19 +29,22 @@ def split_command(text: str) -> tuple[str, list[str]]:
     return parts[0].lower(), parts[1:]
 
 
-def _normalise(name: str) -> str:
+def normalise(name: str) -> str:
     return re.sub(r"[^a-z0-9]", "", name.lower())
 
 
-def match_ellipsoid(name: str) -> Ellipsoid:
+def match_ellipsoid(name: str, ellipsoids: Mapping[str, Ellipsoid] | None = None) -> Ellipsoid:
     """Find an ellipsoid by name, ignoring case, spaces and punctuation.
 
     An exact match wins; otherwise the name must be a prefix of exactly one ellipsoid.
+    Searches ``ellipsoids`` (default: the built-in registry).
     """
-    wanted = _normalise(name)
+    if ellipsoids is None:
+        ellipsoids = ELLIPSOIDS
+    wanted = normalise(name)
     if not wanted:
         raise CommandError("ellipsoid name is empty")
-    by_key = {_normalise(n): e for n, e in ELLIPSOIDS.items()}
+    by_key = {normalise(n): e for n, e in ellipsoids.items()}
     if wanted in by_key:
         return by_key[wanted]
     matches = [e for key, e in by_key.items() if key.startswith(wanted)]
@@ -50,7 +53,7 @@ def match_ellipsoid(name: str) -> Ellipsoid:
     if matches:
         names = ", ".join(e.name for e in matches)
         raise CommandError(f"ambiguous ellipsoid {name!r}: {names}")
-    raise CommandError(f"unknown ellipsoid {name!r} (try: {', '.join(ELLIPSOIDS)})")
+    raise CommandError(f"unknown ellipsoid {name!r} (try: {', '.join(ellipsoids)})")
 
 
 def match_unit(name: str) -> AngleUnit:
@@ -66,6 +69,7 @@ COMMANDS = {
     "help": False,
     "method": True,
     "q": False,
+    "save": False,
     "tab": True,
     "units": True,
     "working": False,
@@ -73,11 +77,17 @@ COMMANDS = {
 UNIT_COMPLETIONS = ["dms", "deg", "rad"]
 
 
-def completions(text: str, methods: Sequence[str] = (), tab_count: int = 0) -> list[str]:
+def completions(
+    text: str,
+    methods: Sequence[str] = (),
+    tab_count: int = 0,
+    ellipsoid_names: Sequence[str] | None = None,
+) -> list[str]:
     """Possible completions of the whole command line ``text``.
 
-    ``methods`` are the option labels of the current tab's method field and
-    ``tab_count`` the number of tabs, used to complete ``:method`` and ``:tab``.
+    ``methods`` are the option labels of the current tab's method field,
+    ``tab_count`` the number of tabs and ``ellipsoid_names`` the ellipsoids
+    available (default: the built-in ones).
     """
     text = text.lstrip().removeprefix(":")
     name, space, arg = text.partition(" ")
@@ -90,8 +100,9 @@ def completions(text: str, methods: Sequence[str] = (), tab_count: int = 0) -> l
 
     name = name.lower()
     if name in ("ell", "ellipsoid"):
-        wanted = _normalise(arg)
-        options = [n for n in ELLIPSOIDS if _normalise(n).startswith(wanted)]
+        wanted = normalise(arg)
+        names = ELLIPSOIDS if ellipsoid_names is None else ellipsoid_names
+        options = [n for n in names if normalise(n).startswith(wanted)]
     elif name in ("units", "unit"):
         options = [u for u in UNIT_COMPLETIONS if u.startswith(arg.strip().lower())]
     elif name == "method":

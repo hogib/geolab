@@ -4,7 +4,19 @@ import pytest
 
 pytest.importorskip("textual")
 
-from geolab import GRS80, HAYFORD, WGS84, AngleUnit, Geodetic, parse_angle  # noqa: E402
+from geolab import (  # noqa: E402
+    GRS80,
+    HAYFORD,
+    WGS84,
+    AngleUnit,
+    Ellipsoid,
+    Geodetic,
+    direct,
+    gaussian_mean_radius,
+    inverse,
+    meridian_radius,
+    parse_angle,
+)
 from geolab.tui.app import GeolabApp, Mode  # noqa: E402
 from geolab.tui.screens import EllipsoidPicker, HelpScreen  # noqa: E402
 from geolab.tui.widgets import (  # noqa: E402
@@ -165,7 +177,7 @@ class TestTabs:
 
     async def test_brackets_wrap(self, pilot):
         await pilot.press("left_square_bracket")
-        assert pilot.app.tab == 2
+        assert pilot.app.tab == 6
         await pilot.press("right_square_bracket")
         assert pilot.app.tab == 0
 
@@ -426,3 +438,144 @@ class TestCompletion:
         await pilot.press("colon", *"units ", "tab", "escape", "colon")
         await pilot.pause()
         assert pilot.app.query_one(CommandLine).candidates == []
+
+
+def values(app: GeolabApp) -> dict[str, str]:
+    """Result rows by label, as the text that would be yanked."""
+    return {row.label: row.copy for row in results(app).rows}
+
+
+class TestInverseTab:
+    async def test_matches_core(self, pilot):
+        await pilot.press("4", "u")
+        await pilot.pause()
+        expected = inverse(*map(parse_angle, ("41 00 30 N", "29 00 00 E", "39 55 00 N", "32 51 00 E")), WGS84)
+        got = values(pilot.app)
+        assert float(got["s   distance"]) == pytest.approx(expected.distance, abs=1e-4)
+        assert float(got["α₁  azimuth at P₁"].rstrip("°")) == pytest.approx(math.degrees(expected.azimuth1), abs=1e-8)
+        assert float(got["α₂₁ back azimuth"].rstrip("°")) == pytest.approx(math.degrees(expected.back_azimuth), abs=1e-8)
+        assert got["iterations"] == str(expected.iterations)
+
+    async def test_antipodal_shows_error(self, pilot):
+        await pilot.press("4", "c", *"0", "enter", "c", *"0", "enter", "c", *"0.5", "enter", "c", *"179.7", "enter")
+        await pilot.pause()
+        assert results(pilot.app).has_class("-error")
+        assert "antipodal" in results(pilot.app).message
+
+
+class TestDirectTab:
+    async def test_defaults_land_on_inverse_end_point(self, pilot):
+        await pilot.press("5")
+        await pilot.pause()
+        got = rows(pilot.app)
+        assert got["φ₂  latitude"] == "39°55'00.0000\"N"
+        assert got["λ₂  longitude"] == "32°51'00.0000\"E"
+
+    async def test_matches_core(self, pilot):
+        await pilot.press("5", "j", "j", "c", *"45", "enter", "c", *"1000000", "enter", "u")
+        await pilot.pause()
+        expected = direct(parse_angle("41 00 30 N"), parse_angle("29 E"), math.radians(45), 1e6, WGS84)
+        got = values(pilot.app)
+        assert float(got["φ₂  latitude"].rstrip("°")) == pytest.approx(math.degrees(expected.lat2), abs=1e-8)
+        assert float(got["λ₂  longitude"].rstrip("°")) == pytest.approx(math.degrees(expected.lon2), abs=1e-8)
+
+
+class TestRadiiTab:
+    async def test_matches_core(self, pilot):
+        await pilot.press("6")
+        await pilot.pause()
+        lat = parse_angle("41 00 30 N")
+        got = values(pilot.app)
+        assert float(got["M   meridian"]) == pytest.approx(meridian_radius(lat, WGS84), abs=1e-4)
+        assert float(got["R   Gaussian mean"]) == pytest.approx(gaussian_mean_radius(lat, WGS84), abs=1e-4)
+
+    async def test_working_has_a_section_per_radius(self, pilot):
+        await pilot.press("6")
+        await pilot.pause()
+        trace = pilot.app.active_calculator.query_one(WorkingPanel).trace
+        titles = [e.title for e in trace.entries if not hasattr(e, "value")]
+        assert len(titles) == 5
+
+
+class TestEllipsoidTab:
+    async def test_shows_current_ellipsoid(self, pilot):
+        await pilot.press("7")
+        await pilot.pause()
+        assert text_field(pilot.app, "name").value == "WGS84"
+        assert float(values(pilot.app)["b   semi-minor axis"]) == pytest.approx(WGS84.b, abs=1e-4)
+
+    async def test_follows_ellipsoid_changes(self, pilot):
+        await pilot.press("7")
+        await run(pilot, "ell hayford")
+        assert text_field(pilot.app, "name").value == "Hayford"
+        assert text_field(pilot.app, "a").value == "6378388.0"
+
+    async def test_editing_updates_derived_values_live(self, pilot):
+        await pilot.press("7", "j", "j", "c", *"300", "escape")
+        await pilot.pause()
+        assert float(values(pilot.app)["f   flattening"]) == pytest.approx(1 / 300)
+        assert pilot.app.ellipsoid is WGS84  # not used until saved
+
+    async def test_save_custom_ellipsoid(self, pilot):
+        await pilot.press("7", "c", *"Mine", "enter", "c", *"6378000", "enter", "s")
+        await pilot.pause()
+        app = pilot.app
+        assert app.ellipsoid == Ellipsoid("Mine", 6378000.0, 298.257223563)
+        assert "Mine" in app.ellipsoids
+        assert app.last_message == "using ellipsoid Mine"
+
+    async def test_custom_ellipsoid_used_by_other_tabs(self, pilot):
+        await pilot.press("7", "c", *"Mine", "enter", "c", *"6000000", "enter", "s", "1")
+        await pilot.pause()
+        expected = Geodetic(parse_angle("41 00 30 N"), parse_angle("29 E"), 150.0).to_cartesian(
+            Ellipsoid("Mine", 6000000.0, 298.257223563)
+        )
+        assert float(values(pilot.app)["X"]) == pytest.approx(expected.x, abs=1e-4)
+
+    async def test_custom_ellipsoid_in_picker_and_completion(self, pilot):
+        await pilot.press("7", "c", *"Mine", "enter", "s")
+        await run(pilot, "ell wgs")
+        assert pilot.app.ellipsoid is WGS84
+        await run(pilot, "ell mine")
+        assert pilot.app.ellipsoid.name == "Mine"
+        await pilot.press("colon", *"ell mi", "tab")
+        assert pilot.app.query_one(CommandLine).value == "ell Mine"
+
+    async def test_resaving_replaces_custom(self, pilot):
+        await pilot.press("7", "c", *"Mine", "enter", "s", "c", *"6000000", "escape", "s")
+        await pilot.pause()
+        assert list(pilot.app.ellipsoids).count("Mine") == 1
+        assert pilot.app.ellipsoids["Mine"].a == 6000000.0
+
+    async def test_cannot_overwrite_builtin(self, pilot):
+        await pilot.press("7", "j", "c", *"6000000", "escape", "s")
+        await pilot.pause()
+        assert pilot.app.ellipsoid is WGS84
+        assert "built-in" in pilot.app.last_message
+
+    async def test_builtin_name_differing_only_in_case_is_rejected(self, pilot):
+        await pilot.press("7", "c", *"wgs-84", "enter", "c", *"6000000", "escape", "s")
+        await pilot.pause()
+        assert pilot.app.ellipsoid is WGS84
+        assert "built-in" in pilot.app.last_message
+
+    async def test_invalid_parameters(self, pilot):
+        await pilot.press("7", "j", "j", "c", *"0.5", "escape")
+        await pilot.pause()
+        assert results(pilot.app).has_class("-error")
+        assert "inverse flattening" in results(pilot.app).message
+        await pilot.press("s")
+        assert pilot.app.ellipsoid is WGS84
+
+    async def test_save_command(self, pilot):
+        await pilot.press("7", "c", *"Mine", "escape")
+        await run(pilot, "w")
+        assert pilot.app.ellipsoid.name == "Mine"
+
+    async def test_save_command_elsewhere(self, pilot):
+        await run(pilot, "save")
+        assert pilot.app.last_message == "nothing to save on this tab"
+
+    async def test_s_does_nothing_on_other_tabs(self, pilot):
+        await pilot.press("s")
+        assert pilot.app.ellipsoid is WGS84

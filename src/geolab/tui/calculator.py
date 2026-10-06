@@ -13,6 +13,7 @@ from .widgets import (
     Form,
     ResultPanel,
     ResultRow,
+    StringField,
     TextField,
     WorkingPanel,
     WorkingView,
@@ -56,8 +57,11 @@ class Calculator(Horizontal):
         self.form.border_title = f"Input · {self.TITLE}"
         self.query_one(ResultPanel).border_title = "Result"
         self.query_one(WorkingView).border_title = "Working"
-        self.watch(self.app, "ellipsoid", lambda: self.recalculate(), init=False)
+        self.watch(self.app, "ellipsoid", lambda: self.ellipsoid_changed(), init=False)
         self.watch(self.app, "angle_unit", lambda: self.recalculate(), init=False)
+        self.recalculate()
+
+    def ellipsoid_changed(self) -> None:
         self.recalculate()
 
     def on_input_changed(self, event: Input.Changed) -> None:
@@ -74,6 +78,11 @@ class Calculator(Horizontal):
         assert isinstance(field, TextField)
         return field.parse()
 
+    def text(self, key: str) -> str:
+        field = self.field(key)
+        assert isinstance(field, StringField)
+        return field.parse()
+
     def choice(self, key: str) -> Any:
         field = self.field(key)
         assert isinstance(field, ChoiceField)
@@ -85,6 +94,11 @@ class Calculator(Horizontal):
 
     def length_row(self, label: str, metres: float) -> ResultRow:
         return ResultRow(label, format_length(metres), f"{metres:.4f}")
+
+    @staticmethod
+    def value_row(label: str, value: float | int) -> ResultRow:
+        text = f"{value:.15g}" if isinstance(value, float) else str(value)
+        return ResultRow(label, text, text)
 
     def recalculate(self) -> None:
         results = self.query_one(ResultPanel)
