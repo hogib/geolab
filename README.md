@@ -6,9 +6,7 @@ a keyboard-driven TUI and a plain Python library.
 
 Every algorithm is implemented from the textbook formulas, with no geodesy
 dependencies, and every calculation can **show its working**: each
-intermediate value, its formula and, for angles, both radians and DMS. That
-makes it easy to check against lecture notes step by step.
-
+intermediate value, its formula and, for angles, both radians and DMS.
 ```
  geolab   1 Geo→ECEF   2 ECEF→Geo   3 Latitudes   4 Inverse   5 Direct   6 Radii   7 Ellipsoid
 ┌Input · Inverse problem (Vincenty)───────┐┌Working──────────────────────────────────────────┐
