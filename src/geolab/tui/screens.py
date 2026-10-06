@@ -97,8 +97,9 @@ HELP = [
     ("Map tab (World block)", [
         ("h j k l  arrows", "pan"),
         ("+ / -", "zoom in / out"),
-        ("f", "fit the view to the points"),
+        ("f", "fit the view to the points and follow them (the default)"),
         ("0", "whole world"),
+        ("", "the map refits when the points change, unless you have panned or zoomed"),
     ]),
     ("Result / Working blocks", [
         ("j / k", "select a result / scroll"),

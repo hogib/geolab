@@ -87,8 +87,10 @@ and the one from the **Direct** tab (Q₁→Q₂, blue), each sampled from the
 ellipsoidal solution rather than drawn as a straight line. Use the `show`
 option to pick one or both, and `grid` to toggle the lat/lon grid.
 
-Press `Tab` to focus the map, then `h`/`j`/`k`/`l` to pan, `+`/`-` to zoom,
-`f` to fit the view to the points and `0` to show the whole world. The
+The map zooms to fit your points automatically and refits whenever they
+change. Press `Tab` to focus it, then `h`/`j`/`k`/`l` to pan and `+`/`-` to
+zoom. Moving the view by hand stops the automatic fitting until the points
+change; `f` fits again and resumes it, and `0` shows the whole world. The
 projection is equirectangular, and paths crossing 180° stay continuous.
 
 The coastlines come from [Natural Earth](https://www.naturalearthdata.com/)

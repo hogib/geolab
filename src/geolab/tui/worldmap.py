@@ -63,6 +63,9 @@ class WorldMap(Widget, can_focus=True):
     center_lon: reactive[float] = reactive(0.0)
     zoom: reactive[float] = reactive(1.0)
     show_grid: reactive[bool] = reactive(True)
+    auto_fit: reactive[bool] = reactive(True, init=False)
+    """While True the view follows the features; panning or zooming by hand
+    turns it off until the features change or ``f`` is pressed."""
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -90,29 +93,48 @@ class WorldMap(Widget, can_focus=True):
         return max(1.0, max(360 / width, 180 / height) / MIN_DEGREES_PER_DOT)
 
     def set_features(self, paths: list[MapPath], points: list[MapPoint]) -> None:
+        """Replace the plotted features. If they changed, zoom to fit them."""
+        changed = (paths, points) != (self.paths, self.points)
         self.paths = paths
         self.points = points
+        if changed:
+            self.auto_fit = True
+        if self.auto_fit:
+            # The widget may not have its size yet (e.g. its tab was just shown).
+            self.call_after_refresh(self._fit_if_auto)
         self.refresh()
 
+    def _fit_if_auto(self) -> None:
+        if self.auto_fit:
+            self._fit()
+
     def action_pan(self, dx: int, dy: int) -> None:
+        self.auto_fit = False
         width, height = self.canvas_size
         step = self.degrees_per_dot
         self.center_lon = math.remainder(self.center_lon + dx * width * step / 8, 360)
         self.center_lat = max(-90.0, min(90.0, self.center_lat + dy * height * step / 8))
 
     def action_zoom(self, factor: float) -> None:
+        self.auto_fit = False
         self.zoom = max(1.0, min(self.max_zoom(), self.zoom * factor))
 
     def action_reset(self) -> None:
+        self.auto_fit = False
         self.center_lat, self.center_lon, self.zoom = 0.0, 0.0, 1.0
 
     def action_fit(self) -> None:
+        """Fit the view to the features and keep following them."""
+        self.auto_fit = True
+        self._fit()
+
+    def _fit(self) -> None:
         """Zoom to show every point and path, with a margin."""
         coords = [(p.lat, p.lon) for p in self.points]
         for path in self.paths:
             coords.extend(_unwrap(path.points))
         if not coords:
-            self.action_reset()
+            self.center_lat, self.center_lon, self.zoom = 0.0, 0.0, 1.0
             return
         # Centre longitudes on the first point so a path across 180° stays contiguous.
         ref = coords[0][1]
@@ -138,8 +160,14 @@ class WorldMap(Widget, can_focus=True):
     def watch_zoom(self) -> None:
         self._update_subtitle()
 
+    def watch_auto_fit(self) -> None:
+        self._update_subtitle()
+
     def on_resize(self) -> None:
-        self.zoom = min(self.zoom, self.max_zoom())
+        if self.auto_fit:
+            self._fit()
+        else:
+            self.zoom = min(self.zoom, self.max_zoom())
         self._update_subtitle()
 
     def _update_subtitle(self) -> None:
@@ -147,7 +175,8 @@ class WorldMap(Widget, can_focus=True):
         ew = "E" if self.center_lon >= 0 else "W"
         self.border_subtitle = (
             f"{abs(self.center_lat):.1f}°{ns} {abs(self.center_lon):.1f}°{ew}"
-            f" · {self.degrees_per_dot:.2f}°/dot · hjkl pan  +/- zoom  f fit  0 world"
+            f" · {self.degrees_per_dot:.2f}°/dot{' · auto' if self.auto_fit else ''}"
+            " · hjkl pan  +/- zoom  f fit  0 world"
         )
 
     # ── Drawing ──────────────────────────────────────────────────────────────
