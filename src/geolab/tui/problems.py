@@ -1,8 +1,10 @@
-from ..angles import AngleKind
 import math
 
+from ..angles import AngleKind
 from ..arcs import (
+    latitude_from_meridian_arc,
     latitude_from_meridian_distance,
+    longitude_from_parallel_arc,
     meridian_arc_length,
     meridian_distance,
     parallel_arc_length,
@@ -115,15 +117,37 @@ class RadiiCalculator(Calculator):
 class ArcCalculator(Calculator):
     TITLE = "Meridian and parallel arcs"
 
+    MODE_FIELDS = {
+        "lengths": {"lon1", "lat2", "lon2"},
+        "meridian": {"dm"},
+        "parallel": {"lon1", "s"},
+    }
+
     def fields(self) -> list[Field]:
         return [
+            ChoiceField(
+                "mode",
+                "mode",
+                [
+                    ("Lengths: φ, λ → arcs", "lengths"),
+                    ("Meridian: φ₁, Δm → φ₂", "meridian"),
+                    ("Parallel: φ, λ₁, s → λ₂", "parallel"),
+                ],
+            ),
             AngleField("lat1", "φ₁ latitude", LAT, "41 00 30 N"),
             AngleField("lon1", "λ₁ longitude", LON, "29 00 00 E"),
             AngleField("lat2", "φ₂ latitude", LAT, "39 55 00 N"),
             AngleField("lon2", "λ₂ longitude", LON, "32 51 00 E"),
+            NumberField("dm", "Δm meridian arc (m, + north)", "-120000"),
+            NumberField("s", "s  parallel arc (m, + east)", "325000"),
         ]
 
     def calculate(self, trace: Trace) -> list[ResultRow]:
+        mode = self.choice("mode")
+        if mode == "meridian":
+            return self._latitude_from_arc(trace)
+        if mode == "parallel":
+            return self._longitude_from_arc(trace)
         lat1, lon1 = self.number("lat1"), self.number("lon1")
         lat2, lon2 = self.number("lat2"), self.number("lon2")
         ell = self.geolab.ellipsoid
@@ -138,6 +162,29 @@ class ArcCalculator(Calculator):
             self.length_row("s₂  parallel arc at φ₂", parallel2),
             self.length_row("m₁  equator → φ₁", meridian_distance(lat1, ell)),
             self.length_row("m₂  equator → φ₂", meridian_distance(lat2, ell)),
+        ]
+
+    def _latitude_from_arc(self, trace: Trace) -> list[ResultRow]:
+        lat1, ell = self.number("lat1"), self.geolab.ellipsoid
+        p = latitude_from_meridian_arc(lat1, self.number("dm"), ell, trace)
+        return [
+            self.angle_row("φ₂  latitude", p.lat, LAT),
+            self.length_row("m₁  equator → φ₁", meridian_distance(lat1, ell)),
+            self.length_row("m₂  equator → φ₂", meridian_distance(p.lat, ell)),
+            self.angle_row("β₂  reduced latitude", p.reduced_lat, LAT),
+            self.length_row("x₂  meridian ellipse", p.x),
+            self.length_row("y₂  meridian ellipse", p.y),
+        ]
+
+    def _longitude_from_arc(self, trace: Trace) -> list[ResultRow]:
+        lat, lon1 = self.number("lat1"), self.number("lon1")
+        ell = self.geolab.ellipsoid
+        trace.section("Along the parallel at φ")
+        lon2 = longitude_from_parallel_arc(lat, lon1, self.number("s"), ell, trace)
+        return [
+            self.angle_row("λ₂  longitude", lon2, LON),
+            self.angle_row("Δλ", math.remainder(lon2 - lon1, math.tau)),
+            self.length_row("r   parallel radius", parallel_radius(lat, ell)),
         ]
 
 
@@ -173,26 +220,15 @@ class EllipseArcCalculator(Calculator):
             ChoiceField("axes", "a, b from", [("Custom", "custom"), ("Ellipsoid", "ellipsoid")]),
         ]
 
-    def on_mount(self) -> None:
-        super().on_mount()
-        self._show_mode_fields()
-
     def on_choice_field_changed(self, event: ChoiceField.Changed) -> None:
         if event.field.key == "mode":
-            self._show_mode_fields()
+            self.show_mode_fields()
             axes = self.field("axes")
             if self.choice("mode") == "point" and isinstance(axes, ChoiceField):
                 axes.select(1)  # the meridian of the current ellipsoid is the usual case
         if event.field.key == "axes":
             self._fill_axes()
         self.recalculate()
-
-    def _show_mode_fields(self) -> None:
-        mode = self.choice("mode")
-        hidden = set().union(*(keys for m, keys in self.MODE_FIELDS.items() if m != mode))
-        for field in self.form.all_fields:
-            field.display = field.key not in hidden
-        self.form.refresh_selection()
 
     def ellipsoid_changed(self) -> None:
         # Picking an ellipsoid (:ell, e) means "use it": switch away from custom axes.

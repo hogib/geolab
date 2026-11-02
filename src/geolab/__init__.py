@@ -11,7 +11,9 @@ from .angles import (
 )
 from .arcs import (
     MeridianPoint,
+    latitude_from_meridian_arc,
     latitude_from_meridian_distance,
+    longitude_from_parallel_arc,
     meridian_arc_length,
     meridian_distance,
     parallel_arc_length,

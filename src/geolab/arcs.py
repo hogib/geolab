@@ -153,3 +153,34 @@ def latitude_from_meridian_distance(
         trace.step("ψ", psi, "atan((1 − e²) tan φ)", unit="rad")
 
     return MeridianPoint(lat, beta, psi, x, y, i)
+
+
+def latitude_from_meridian_arc(
+    lat1: float, arc: float, ellipsoid: Ellipsoid, trace: Trace | None = None
+) -> MeridianPoint:
+    """The point on the same meridian as φ₁, ``arc`` metres away along it
+    (positive northwards): φ₂ from m(φ₂) = m(φ₁) + Δm."""
+    if trace is not None:
+        trace.section("Meridian distance to φ₁")
+    m1 = meridian_distance(lat1, ellipsoid, trace)
+    m2 = m1 + arc
+    if trace is not None:
+        trace.section("Meridian distance to φ₂")
+        trace.step("m₂", m2, "m₁ + Δm", unit="m")
+    return latitude_from_meridian_distance(m2, ellipsoid, trace)
+
+
+def longitude_from_parallel_arc(
+    lat: float, lon1: float, arc: float, ellipsoid: Ellipsoid, trace: Trace | None = None
+) -> float:
+    """Longitude reached after ``arc`` metres along the parallel at ``lat``
+    (positive eastwards): λ₂ = λ₁ + s / r. Returned in [−π, π]."""
+    r = parallel_radius(lat, ellipsoid, trace)
+    if r < 1e-3:  # cos 90° isn't exactly 0 in floating point
+        raise ValueError("the parallel at a pole has zero length")
+    dlon = arc / r
+    lon2 = math.remainder(lon1 + dlon, math.tau)
+    if trace is not None:
+        trace.step("Δλ", dlon, "s / r", unit="rad")
+        trace.step("λ₂", lon2, "λ₁ + Δλ", unit="rad")
+    return lon2

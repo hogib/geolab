@@ -16,7 +16,9 @@ from geolab import (  # noqa: E402
     ellipse_perimeter,
     gaussian_mean_radius,
     inverse,
+    latitude_from_meridian_arc,
     latitude_from_meridian_distance,
+    longitude_from_parallel_arc,
     meridian_arc_length,
     meridian_distance,
     meridian_radius,
@@ -565,6 +567,35 @@ async def test_header_shows_current_calculator(pilot):
     await pilot.press("4")
     await pilot.pause()
     assert "Inverse problem (Vincenty)" in header()
+
+
+class TestArcModes:
+    async def test_lengths_mode_fields(self, pilot):
+        await pilot.press("9")
+        await pilot.pause()
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "lat1", "lon1", "lat2", "lon2"]
+
+    async def test_latitude_from_meridian_arc(self, pilot):
+        await pilot.press("9", "l")
+        await pilot.pause()
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "lat1", "dm"]
+        await pilot.press("j", "j", "c", *"-120000", "escape", "u")
+        await pilot.pause()
+        lat1 = parse_angle("41 00 30 N")
+        expected = latitude_from_meridian_arc(lat1, -120000.0, WGS84)
+        got = values(pilot.app)
+        assert float(got["φ₂  latitude"].rstrip("°")) == pytest.approx(math.degrees(expected.lat), abs=1e-8)
+
+    async def test_longitude_from_parallel_arc(self, pilot):
+        await pilot.press("9", "l", "l")
+        await pilot.pause()
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "lat1", "lon1", "s"]
+        await pilot.press("u")
+        await pilot.pause()
+        lat1, lon1 = parse_angle("41 00 30 N"), parse_angle("29 E")
+        expected = longitude_from_parallel_arc(lat1, lon1, 325000.0, WGS84)
+        got = values(pilot.app)
+        assert float(got["λ₂  longitude"].rstrip("°")) == pytest.approx(math.degrees(expected), abs=1e-8)
 
 
 class TestEllipseTab:

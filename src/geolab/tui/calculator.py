@@ -32,6 +32,9 @@ class Calculator(Horizontal):
     """
 
     TITLE = ""
+    MODE_FIELDS: dict[str, set[str]] = {}
+    """For calculators with a ``mode`` choice: mode → keys of the mode-specific fields
+    it shows. Fields in no list are always shown."""
 
     def compose(self) -> ComposeResult:
         with Vertical(classes="left"):
@@ -60,7 +63,19 @@ class Calculator(Horizontal):
             view.border_title = "Working"
         self.watch(self.app, "ellipsoid", lambda: self.ellipsoid_changed(), init=False)
         self.watch(self.app, "angle_unit", lambda: self.recalculate(), init=False)
+        self.show_mode_fields()
         self.recalculate()
+
+    def show_mode_fields(self) -> None:
+        """Hide the fields that belong to the other modes."""
+        if not self.MODE_FIELDS:
+            return
+        mode = self.choice("mode")
+        others = set().union(*(keys for m, keys in self.MODE_FIELDS.items() if m != mode))
+        hidden = others - self.MODE_FIELDS.get(mode, set())
+        for field in self.form.all_fields:
+            field.display = field.key not in hidden
+        self.form.refresh_selection()
 
     def activated(self) -> None:
         """Called when the tab becomes the active one."""
@@ -72,6 +87,8 @@ class Calculator(Horizontal):
         self.recalculate()
 
     def on_choice_field_changed(self, event: ChoiceField.Changed) -> None:
+        if event.field.key == "mode":
+            self.show_mode_fields()
         self.recalculate()
 
     def field(self, key: str) -> Field:

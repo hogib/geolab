@@ -9,8 +9,11 @@ from geolab import (
     Ellipsoid,
     Geodetic,
     Trace,
+    direct,
     inverse,
+    latitude_from_meridian_arc,
     latitude_from_meridian_distance,
+    longitude_from_parallel_arc,
     meridian_arc_length,
     meridian_distance,
     meridian_radius,
@@ -128,3 +131,41 @@ class TestLatitudeFromMeridianDistance:
         p = latitude_from_meridian_distance(4_000_000.0, WGS84, trace)
         assert trace["x"] == p.x
         assert trace["φ"] == p.lat
+
+
+class TestLatitudeFromMeridianArc:
+    def test_matches_meridian_arc_length(self):
+        lat1 = math.radians(41.0083)
+        p = latitude_from_meridian_arc(lat1, -120_000.0, HAYFORD)
+        assert p.lat < lat1
+        assert meridian_arc_length(lat1, p.lat, HAYFORD) == pytest.approx(120_000.0, abs=1e-6)
+
+    def test_matches_vincenty_direct_due_north(self):
+        lat1 = math.radians(39.9)
+        p = latitude_from_meridian_arc(lat1, 250_000.0, WGS84)
+        r = direct(lat1, 0.3, 0.0, 250_000.0, WGS84)
+        assert p.lat == pytest.approx(r.lat2, abs=1e-11)
+
+    def test_crossing_the_equator(self):
+        p = latitude_from_meridian_arc(math.radians(0.5), -2 * meridian_distance(math.radians(0.5), WGS84), WGS84)
+        assert p.lat == pytest.approx(math.radians(-0.5), abs=1e-14)
+
+    def test_beyond_the_pole(self):
+        with pytest.raises(ValueError, match="quarter meridian"):
+            latitude_from_meridian_arc(math.radians(89.0), 200_000.0, WGS84)
+
+
+class TestLongitudeFromParallelArc:
+    def test_inverts_parallel_arc_length(self):
+        lat, lon1 = math.radians(41.0), math.radians(29.0)
+        lon2 = longitude_from_parallel_arc(lat, lon1, 325_000.0, HAYFORD)
+        assert lon2 > lon1
+        assert parallel_arc_length(lat, lon1, lon2, HAYFORD) == pytest.approx(325_000.0, abs=1e-6)
+
+    def test_westwards_and_across_antimeridian(self):
+        lon2 = longitude_from_parallel_arc(0.0, math.radians(-179.5), -WGS84.a * math.radians(1.0), WGS84)
+        assert lon2 == pytest.approx(math.radians(179.5))
+
+    def test_pole_is_an_error(self):
+        with pytest.raises(ValueError):
+            longitude_from_parallel_arc(math.pi / 2, 0.0, 1.0, WGS84)

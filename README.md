@@ -36,7 +36,9 @@ intermediate value, its formula and, for angles, both radians and DMS.
 - **Radii of curvature:** meridian M, prime vertical N, parallel r, Gaussian
   mean R, and the normal section in any azimuth (Euler).
 - **Arc lengths:** along a meridian (Helmert's series in n) and along a
-  parallel (r Δλ).
+  parallel (r Δλ). The reverse too: the latitude reached after a given arc
+  along a meridian (same longitude), or the longitude after a given arc along
+  a parallel (same latitude); set `mode` in the arcs calculator.
 - **Latitude from meridian arc:** given the meridian distance m from the
   equator, the latitudes φ, β, ψ and the coordinates (x, y on the meridian
   ellipse, and X, Y, Z at a chosen longitude). In the 2D ellipse calculator, set
