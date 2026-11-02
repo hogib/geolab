@@ -218,3 +218,10 @@ uv run pytest                  # everything (~1 min; the TUI tests drive the app
 uv run pytest --ignore-glob='tests/test_tui*'   # just the library (< 1 s)
 uv run textual run --dev src/geolab/tui/app.py:GeolabApp   # with Textual devtools
 ```
+
+## License
+
+geolab is free software: you can redistribute it and/or modify it under the
+terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version. See [LICENSE](LICENSE).
