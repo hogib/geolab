@@ -38,6 +38,11 @@ from .ellipsoids import (
     Ellipsoid,
 )
 from .errors import ConvergenceError
+from .geodesic_curve import (
+    clairaut_constant,
+    integrate_geodesic,
+    vertex_latitude,
+)
 from .geodesic import DirectResult, InverseResult, direct, geodesic_points, inverse
 from .meridian_ellipse import MeridianEllipsePoint, meridian_ellipse_point
 from .point import Cartesian3D, Geodetic, GeodeticMethod, Latitude, LatType

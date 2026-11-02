@@ -51,6 +51,11 @@ intermediate value, its formula and, for angles, both radians and DMS.
   equator, the latitudes φ, β, ψ and the coordinates (x, y on the meridian
   ellipse, and X, Y, Z at a chosen longitude). In the 2D ellipse calculator, set
   `mode` to *Point*.
+- **Geodesic curve:** Clairaut's constant N cos φ sin α, the highest
+  latitude a geodesic reaches and its azimuths at any latitude; the azimuth
+  and length differences between the geodesic and the normal sections, and
+  the target-height reduction of observed directions. The library can also
+  integrate the geodesic's differential equations (Runge–Kutta).
 - **Datum transformation:** the 7-parameter Helmert transformation between
   TUTGA-99 (GRS80) and ED-50 (Hayford), in either direction, from φ, λ, h.
   The parameters are entered as published (m, arc seconds, ppm); the

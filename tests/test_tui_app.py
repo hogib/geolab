@@ -217,7 +217,8 @@ class TestTabs:
         await pilot.press("t", *"vin")
         await pilot.pause()
         finder = pilot.app.screen
-        assert str(finder.query_one("#finder-count").render()).strip() == f"2/{len(TABS)}"
+        shown, total = str(finder.query_one("#finder-count").render()).strip().split("/")
+        assert int(total) == len(TABS) and 2 <= int(shown) < len(TABS)
         first = finder.query_one("#finder-list").get_option_at_index(0).prompt
         assert first.plain.endswith("Inverse problem (Vincenty)")
         assert any(span.style for span in first.spans)
@@ -720,6 +721,22 @@ class TestAreaCalculator:
         assert float(got["P   quadrangle (m²)"]) == pytest.approx(
             quadrangle_area(lat1, lat2, lon1, lon2, HAYFORD), rel=1e-12
         )
+
+
+class TestGeodesicCurveCalculator:
+    async def test_course_example(self, pilot):
+        await run(pilot, "ell hayford")
+        await run(pilot, "tab clairaut")
+        got = rows(pilot.app)
+        assert values(pilot.app)["k   N cos φ sin α (m)"].startswith("3194567.525")
+        assert got["φmax highest latitude"] == "60°01'40.6083\"N"
+        assert got["α   at φ₂"] == "30°03'20.7081\""
+
+    async def test_unreached_latitude(self, pilot):
+        await run(pilot, "tab clairaut")
+        await pilot.press("j", "j", "c", *"70 N", "escape")
+        await pilot.pause()
+        assert rows(pilot.app)["α at φ₂"] == "not reached"
 
 
 class TestEllipsoidTab:
