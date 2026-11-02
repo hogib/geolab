@@ -543,7 +543,22 @@ class TestRadiiTab:
         await pilot.pause()
         trace = pilot.app.active_calculator.query_one(WorkingPanel).trace
         titles = [e.title for e in trace.entries if not hasattr(e, "value")]
-        assert len(titles) == 5
+        assert titles[:5] == [
+            "Meridian radius M",
+            "Prime vertical radius N",
+            "Parallel radius r",
+            "Gaussian mean radius R",
+            "Radius in azimuth α",
+        ]
+        assert "First fundamental quantities" in titles
+
+    async def test_fundamental_forms(self, pilot):
+        await pilot.press("6")
+        await pilot.pause()
+        lat = parse_angle("41 00 30 N")
+        got = values(pilot.app)
+        assert float(got["E   1st form (= M²)"]) == pytest.approx(meridian_radius(lat, WGS84) ** 2, rel=1e-12)
+        assert float(got["F   1st form"]) == 0
 
 
 class TestArcsTab:

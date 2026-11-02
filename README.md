@@ -34,7 +34,10 @@ intermediate value, its formula and, for angles, both radians and DMS.
   the auxiliary quantities w, v.
 - **Inverse and direct problems:** Vincenty (1975).
 - **Radii of curvature:** meridian M, prime vertical N, parallel r, Gaussian
-  mean R, and the normal section in any azimuth (Euler).
+  mean R, and the normal section in any azimuth (Euler). Also the first and
+  second fundamental quantities E, F, G and L, M̄, N̄ with φ, λ as Gauss
+  parameters, the Gauss and mean curvatures, and (in the library) the arc
+  and area elements, the azimuth of a curve element and Meusnier's theorem.
 - **Arc lengths:** along a meridian (Helmert's series in n) and along a
   parallel (r Δλ). The reverse too: the latitude reached after a given arc
   along a meridian (same longitude), or the longitude after a given arc along

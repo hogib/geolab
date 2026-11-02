@@ -19,6 +19,7 @@ from ..curvature import (
 from ..ellipse import ellipse_arc, parametric_from_normal, parametric_from_polar
 from ..ellipsoids import Ellipsoid
 from ..geodesic import direct, inverse
+from ..surface import fundamental_forms
 from ..trace import Trace
 from .calculator import Calculator
 from .widgets import AngleField, ChoiceField, Field, NumberField, ResultRow, TextField
@@ -85,7 +86,7 @@ class DirectProblem(Calculator):
 
 
 class RadiiCalculator(Calculator):
-    TITLE = "Radii of curvature"
+    TITLE = "Radii of curvature and fundamental forms"
 
     def fields(self) -> list[Field]:
         return [
@@ -105,12 +106,21 @@ class RadiiCalculator(Calculator):
         gauss = gaussian_mean_radius(lat, ell, trace)
         trace.section("Radius in azimuth α")
         r_az = azimuth_radius(lat, az, ell, trace)
+        ff = fundamental_forms(lat, ell, trace)
         return [
             self.length_row("M   meridian", m),
             self.length_row("N   prime vertical", n),
             self.length_row("r   parallel", r),
             self.length_row("R   Gaussian mean", gauss),
             self.length_row("Rα  in azimuth α", r_az),
+            self.value_row("E   1st form (= M²)", ff.E),
+            self.value_row("F   1st form", ff.F),
+            self.value_row("G   1st form (= N² cos²φ)", ff.G),
+            self.value_row("L   2nd form (= M)", ff.L),
+            self.value_row("M̄   2nd form", ff.M),
+            self.value_row("N̄   2nd form (= N cos²φ)", ff.N),
+            self.value_row("K   Gauss curvature 1/(MN)", ff.gauss_curvature),
+            self.value_row("H   mean curvature", ff.mean_curvature),
         ]
 
 
