@@ -739,6 +739,25 @@ class TestGeodesicCurveCalculator:
         assert rows(pilot.app)["α at φ₂"] == "not reached"
 
 
+class TestShortLinesCalculator:
+    async def test_mid_latitude_course_example(self, pilot):
+        await run(pilot, "ell bessel")
+        await run(pilot, "tab short")
+        await pilot.press("l", "l", "l")  # Mid-latitude inverse
+        await pilot.pause()
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "lat1", "lon1", "lat2", "lon2"]
+        got = values(pilot.app)
+        assert float(got["s   distance"]) == pytest.approx(47652.596, abs=2e-3)
+        assert rows(pilot.app)["α₁₂ azimuth"] == "25°16'31.9783\""
+
+    async def test_legendre_direct_agrees_with_vincenty(self, pilot):
+        await run(pilot, "ell bessel")
+        await run(pilot, "tab short")
+        got = values(pilot.app)
+        assert abs(float(got["φ₂ − Vincenty (″)"])) < 1e-4
+        assert abs(float(got["λ₂ − Vincenty (″)"])) < 1e-4
+
+
 class TestEllipsoidTab:
     async def test_shows_current_ellipsoid(self, pilot):
         await pilot.press("7")

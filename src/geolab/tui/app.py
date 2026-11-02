@@ -27,6 +27,7 @@ from .area_tab import AreaCalculator
 from .datum_tab import DatumCalculator
 from .ellipsoid_tab import EllipsoidEditor
 from .geodesic_tab import GeodesicCurveCalculator
+from .short_lines_tab import ShortLinesCalculator
 from .problems import (
     ArcCalculator,
     DirectProblem,
@@ -53,6 +54,7 @@ TABS: list[tuple[str, type[Calculator]]] = [
     ("Datum", DatumCalculator),
     ("Area", AreaCalculator),
     ("Geodesic curve", GeodesicCurveCalculator),
+    ("Short lines", ShortLinesCalculator),
 ]
 
 

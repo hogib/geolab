@@ -51,6 +51,9 @@ intermediate value, its formula and, for angles, both radians and DMS.
   equator, the latitudes φ, β, ψ and the coordinates (x, y on the meridian
   ellipse, and X, Y, Z at a chosen longitude). In the 2D ellipse calculator, set
   `mode` to *Point*.
+- **Short lines:** the direct and inverse problems by Legendre's series and
+  by Gauss's mid-latitude formulas (as in the course), each compared with
+  Vincenty. Defaults to the course's Bessel-ellipsoid example.
 - **Geodesic curve:** Clairaut's constant N cos φ sin α, the highest
   latitude a geodesic reaches and its azimuths at any latitude; the azimuth
   and length differences between the geodesic and the normal sections, and
