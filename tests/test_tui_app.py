@@ -28,6 +28,7 @@ from geolab import (  # noqa: E402
 )
 from geolab.area import quadrangle_area  # noqa: E402
 from geolab.config import save_ellipsoids  # noqa: E402
+from geolab.soldner import soldner_from_geodetic  # noqa: E402
 from geolab.tui.app import TABS, GeolabApp, Mode  # noqa: E402
 from geolab.tui.screens import EllipsoidPicker, HelpScreen  # noqa: E402
 from geolab.tui.widgets import (  # noqa: E402
@@ -775,6 +776,24 @@ class TestTriangleCalculator:
         got = values(pilot.app)
         assert "ε   spherical excess (″)" not in got
         assert float(got["F   area (m²)"]) > 0
+
+
+class TestSoldnerCalculator:
+    async def test_round_trip_through_modes(self, pilot):
+        await run(pilot, "tab soldner")
+        got = values(pilot.app)
+        expected = soldner_from_geodetic(
+            parse_angle("40 30 N"), parse_angle("31 E"), parse_angle("40 N"), parse_angle("30 E"), WGS84
+        )
+        assert float(got["x   north"]) == pytest.approx(expected.x, abs=1e-4)
+        assert float(got["y   east"]) == pytest.approx(expected.y, abs=1e-4)
+
+    async def test_inverse_mode_fields(self, pilot):
+        await run(pilot, "tab soldner")
+        await pilot.press("h")  # wraps to Inverse
+        await pilot.pause()
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "lat0", "lon0", "x", "y", "x2", "y2"]
+        assert "S   distance" in values(pilot.app)
 
 
 class TestEllipsoidTab:

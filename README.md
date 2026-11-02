@@ -59,6 +59,9 @@ intermediate value, its formula and, for angles, both radians and DMS.
   spherical ones use the Gauss sphere R = √(MN) and give the spherical
   excess; for small geodetic triangles, Legendre's theorem and Soldner's
   additament method are shown next to the exact solution.
+- **Soldner coordinates:** geodetic rectangular x, y about a central
+  meridian, to and from φ, λ with the meridian convergence γ, and the direct
+  and inverse problems in x, y.
 - **Geodesic curve:** Clairaut's constant N cos φ sin α, the highest
   latitude a geodesic reaches and its azimuths at any latitude; the azimuth
   and length differences between the geodesic and the normal sections, and
