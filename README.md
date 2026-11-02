@@ -33,6 +33,17 @@ intermediate value, its formula and, for angles, both radians and DMS.
 - **Inverse and direct problems:** Vincenty (1975).
 - **Radii of curvature:** meridian M, prime vertical N, parallel r, Gaussian
   mean R, and the normal section in any azimuth (Euler).
+- **Arc lengths:** along a meridian (Helmert's series in n) and along a
+  parallel (r Δλ).
+- **Latitude from meridian arc:** given the meridian distance m from the
+  equator, the latitudes φ, β, ψ and the coordinates (x, y on the meridian
+  ellipse, and X, Y, Z at a chosen longitude). On the Ellipse tab, set
+  `mode` to *Point*.
+- **2D ellipse arcs:** arc length, chord and perimeter on any planar ellipse
+  x²/a² + y²/b² = 1, between parametric or polar angles (Carlson's elliptic
+  integrals, so any eccentricity works). Set `a, b from` to *Ellipsoid* to
+  use the current ellipsoid's meridian ellipse (e.g. Hayford), and the angle
+  type to *Normal φ* to enter geodetic latitudes.
 - **Angles** in DMS, decimal degrees or radians, with N/S/E/W.
 - **World map:** a braille-character map in the terminal that plots the
   geodesics from the Inverse and Direct tabs.
@@ -65,7 +76,7 @@ you type. Press `?` inside the app for the full list of keys.
 | `c` | clear the field and edit it |
 | `Esc` | back to NORMAL mode |
 | `h` / `l`, `Space` | cycle an option field (e.g. Iterative / Bowring) |
-| `1`–`8`, `gt` / `gT`, `]` / `[` | switch tab |
+| `1`–`9`, `0`, `gt` / `gT`, `]` / `[` | switch tab |
 | `Tab` / `Shift+Tab` | move between the Input, Result and Working blocks |
 | `y` / `Y` | copy the selected result / all results to the clipboard |
 | `w` | show or hide the working |

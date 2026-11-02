@@ -24,7 +24,13 @@ from .commands import (
 )
 from .convert import EcefToGeodetic, GeodeticToEcef, LatitudeConverter
 from .ellipsoid_tab import EllipsoidEditor
-from .problems import DirectProblem, InverseProblem, RadiiCalculator
+from .problems import (
+    ArcCalculator,
+    DirectProblem,
+    EllipseArcCalculator,
+    InverseProblem,
+    RadiiCalculator,
+)
 from .worldmap import MapTab
 from .screens import EllipsoidPicker, HelpScreen
 from .widgets import ChoiceField, CommandLine, Form, ResultPanel, WorkingView
@@ -38,6 +44,8 @@ TABS: list[tuple[str, type[Calculator]]] = [
     ("Radii", RadiiCalculator),
     ("Ellipsoid", EllipsoidEditor),
     ("Map", MapTab),
+    ("Arcs", ArcCalculator),
+    ("Ellipse", EllipseArcCalculator),
 ]
 UNIT_NAMES = {AngleUnit.DMS: "DMS", AngleUnit.DEGREES: "DEG", AngleUnit.RADIANS: "RAD"}
 
@@ -63,7 +71,7 @@ class GeolabApp(App):
 
     BINDINGS = [
         Binding("escape", "normal_mode", show=False),
-        *(Binding(str(i), f"tab({i - 1})", show=False) for i in range(1, 10)),
+        *(Binding(str(i % 10), f"tab({i - 1})", show=False) for i in range(1, 11)),
         Binding("right_square_bracket", "next_tab", show=False),
         Binding("left_square_bracket", "prev_tab", show=False),
         Binding("w", "toggle_working", show=False),
@@ -190,7 +198,8 @@ class GeolabApp(App):
         text = Text.assemble((" geolab ", f"bold {theme['background']} on {theme['accent']}"), " ")
         for i, (name, _) in enumerate(TABS):
             style = f"bold {theme['background']} on {theme['primary']}" if i == self.tab else "dim"
-            text.append(f" {i + 1} {name} ", style=style)
+            key = "0" if i == 9 else str(i + 1)  # key 0 opens tab 10
+            text.append(f" {key} {name} ", style=style)
             text.append(" ")
         self.query_one("#tabbar", Static).update(text)
 

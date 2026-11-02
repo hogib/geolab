@@ -74,7 +74,7 @@ HELP = [
         ("i  a  enter", "edit the selected field"),
         ("c", "clear the field and edit it"),
         ("h / l  space", "cycle an option field"),
-        ("1 – 8", "switch tab"),
+        ("1 – 9, 0", "switch tab (0 is tab 10)"),
         ("gt / gT  ] / [", "next / previous tab"),
         ("tab / shift+tab", "move between Input, Result and Working"),
         ("y / Y", "copy the selected result / all results"),

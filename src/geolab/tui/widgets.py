@@ -194,8 +194,18 @@ class Form(Vertical, can_focus=True):
             self.field = field
 
     @property
-    def fields(self) -> list[Field]:
+    def all_fields(self) -> list[Field]:
         return list(self.query(Field))
+
+    @property
+    def fields(self) -> list[Field]:
+        """The visible fields, in order; j/k move between these."""
+        return [f for f in self.all_fields if f.display]
+
+    def refresh_selection(self) -> None:
+        """Re-mark the selected field after fields were shown or hidden."""
+        self.selected = min(self.selected, len(self.fields) - 1)
+        self.watch_selected(self.selected)
 
     @property
     def current(self) -> Field:
@@ -205,8 +215,9 @@ class Form(Vertical, can_focus=True):
         self.watch_selected(self.selected)
 
     def watch_selected(self, selected: int) -> None:
-        for i, field in enumerate(self.fields):
-            field.set_selected(i == selected)
+        current = self.fields[selected] if self.fields else None
+        for field in self.all_fields:
+            field.set_selected(field is current)
 
     def action_move(self, step: int) -> None:
         self.selected = max(0, min(len(self.fields) - 1, self.selected + step))

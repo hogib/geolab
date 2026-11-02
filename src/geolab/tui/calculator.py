@@ -75,7 +75,7 @@ class Calculator(Horizontal):
         self.recalculate()
 
     def field(self, key: str) -> Field:
-        return next(f for f in self.form.fields if f.key == key)
+        return next(f for f in self.form.all_fields if f.key == key)
 
     def number(self, key: str) -> float:
         field = self.field(key)

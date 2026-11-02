@@ -12,9 +12,14 @@ from geolab import (  # noqa: E402
     Ellipsoid,
     Geodetic,
     direct,
+    ellipse_perimeter,
     gaussian_mean_radius,
     inverse,
+    latitude_from_meridian_distance,
+    meridian_arc_length,
+    meridian_distance,
     meridian_radius,
+    parallel_arc_length,
     parse_angle,
 )
 from geolab.config import save_ellipsoids  # noqa: E402
@@ -178,7 +183,7 @@ class TestTabs:
 
     async def test_brackets_wrap(self, pilot):
         await pilot.press("left_square_bracket")
-        assert pilot.app.tab == 7
+        assert pilot.app.tab == 9
         await pilot.press("right_square_bracket")
         assert pilot.app.tab == 0
 
@@ -194,9 +199,9 @@ class TestTabs:
         assert pilot.app.focused is form(pilot.app)
 
     async def test_missing_tab(self, pilot):
-        await pilot.press("9")
+        await run(pilot, "11")
         assert pilot.app.tab == 0
-        assert pilot.app.last_message == "no tab 9"
+        assert pilot.app.last_message == "no tab 11"
 
 
 class TestChoiceField:
@@ -496,6 +501,104 @@ class TestRadiiTab:
         trace = pilot.app.active_calculator.query_one(WorkingPanel).trace
         titles = [e.title for e in trace.entries if not hasattr(e, "value")]
         assert len(titles) == 5
+
+
+class TestArcsTab:
+    async def test_matches_core(self, pilot):
+        await pilot.press("9")
+        await pilot.pause()
+        lat1, lat2 = parse_angle("41 00 30 N"), parse_angle("39 55 00 N")
+        lon1, lon2 = parse_angle("29 E"), parse_angle("32 51 E")
+        got = values(pilot.app)
+        assert float(got["Δm  meridian arc φ₁→φ₂"]) == pytest.approx(
+            meridian_arc_length(lat1, lat2, WGS84), abs=1e-4
+        )
+        assert float(got["s₂  parallel arc at φ₂"]) == pytest.approx(
+            parallel_arc_length(lat2, lon1, lon2, WGS84), abs=1e-4
+        )
+
+
+class TestEllipseTab:
+    async def test_quarter_perimeter_by_default(self, pilot):
+        await pilot.press("0")
+        await pilot.pause()
+        assert pilot.app.tab == 9
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "a", "b", "t1", "t2", "angle", "axes"]
+        got = values(pilot.app)
+        assert float(got["s   arc length"]) == pytest.approx(ellipse_perimeter(5, 3) / 4, abs=1e-12)
+        assert float(got["c   chord"]) == pytest.approx(math.hypot(5, 3))
+
+    async def test_polar_angles(self, pilot):
+        await pilot.press("0", "j", "j", "j", "j", "c", *"45", "escape", "j", "l")
+        await pilot.pause()
+        got = values(pilot.app)
+        # θ = 0 → (5, 0); θ = 45° → x = y = 15/√34
+        assert float(got["x₂"]) == pytest.approx(float(got["y₂"]))
+        assert float(got["x₂"]) == pytest.approx(15 / math.sqrt(34))
+
+
+    async def test_hayford_meridian_ellipse(self, pilot):
+        await run(pilot, "ell hayford")
+        await pilot.press("0", "j", "j", "j", "j", "c", *"41 00 30", "escape", "j", "l", "l", "j", "l")
+        await pilot.pause()
+        assert text_field(pilot.app, "a").value == repr(HAYFORD.a)
+        assert text_field(pilot.app, "b").value == repr(HAYFORD.b)
+        got = values(pilot.app)
+        lat = parse_angle("41 00 30")
+        assert float(got["s   arc length"]) == pytest.approx(meridian_distance(lat, HAYFORD), abs=1e-6)
+        assert float(got["e²  1st eccentricity²"]) == pytest.approx(HAYFORD.e_sq, rel=1e-12)
+        assert float(got["1/f"]) == pytest.approx(297.0, rel=1e-12)
+        await run(pilot, "ell wgs84")  # follows the ellipsoid
+        assert text_field(pilot.app, "b").value == repr(WGS84.b)
+
+    async def test_choosing_an_ellipsoid_switches_from_custom_axes(self, pilot):
+        await pilot.press("0")
+        await pilot.pause()
+        assert pilot.app.active_calculator.choice("axes") == "custom"
+        await run(pilot, "ell hayford")
+        assert pilot.app.active_calculator.choice("axes") == "ellipsoid"
+        assert text_field(pilot.app, "a").value == repr(HAYFORD.a)
+        assert text_field(pilot.app, "b").value == repr(HAYFORD.b)
+        assert float(values(pilot.app)["1/f"]) == pytest.approx(297.0, rel=1e-12)
+
+    async def test_point_mode_hayford(self, pilot):
+        await run(pilot, "ell hayford")
+        lat = parse_angle("41 00 30 N")
+        m = meridian_distance(lat, HAYFORD)
+        await pilot.press("0", "l")
+        await pilot.pause()
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "a", "b", "m", "lon", "axes"]
+        assert pilot.app.active_calculator.choice("axes") == "ellipsoid"
+        assert text_field(pilot.app, "a").value == repr(HAYFORD.a)
+        await pilot.press("j", "j", "j", "c", *repr(m), "escape", "j", "c", *"29 E", "escape", "u")
+        await pilot.pause()
+        got = values(pilot.app)
+        assert float(got["φ   geodetic latitude"].rstrip("°")) == pytest.approx(41 + 30 / 3600, abs=1e-8)
+        xyz = Geodetic(lat, parse_angle("29 E"), 0.0).to_cartesian(HAYFORD)
+        assert float(got["X   ECEF"]) == pytest.approx(xyz.x, abs=1e-4)
+        assert float(got["Z   ECEF"]) == pytest.approx(xyz.z, abs=1e-4)
+
+    async def test_point_mode_custom_axes(self, pilot):
+        # A custom meridian ellipse with Hayford's axes gives the same point.
+        await pilot.press("0", "l", "j", "c", *repr(HAYFORD.a), "escape", "j", "c", *repr(HAYFORD.b), "escape")
+        await pilot.press("j", "j", "j", "h")  # axes: back to Custom, keeping a and b
+        await pilot.pause()
+        assert pilot.app.active_calculator.choice("axes") == "custom"
+        got = values(pilot.app)
+        expected = latitude_from_meridian_distance(4540000.0, HAYFORD)
+        assert float(got["y   meridian ellipse"]) == pytest.approx(expected.y, abs=1e-6)
+
+    async def test_switching_back_restores_arc_fields(self, pilot):
+        await pilot.press("0", "l", "j", "j", "j", "j", "j", "k", "k", "k", "k", "k", "l")
+        await pilot.pause()
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "a", "b", "t1", "t2", "angle", "axes"]
+        assert "s   arc length" in values(pilot.app)
+
+    async def test_beyond_the_pole_is_an_error(self, pilot):
+        await pilot.press("0", "l", "j", "j", "j", "c", *"10002000", "escape")
+        await pilot.pause()
+        assert "quarter meridian" in results(pilot.app).message
+        assert results(pilot.app).has_class("-error")
 
 
 class TestEllipsoidTab:

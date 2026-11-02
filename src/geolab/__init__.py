@@ -9,6 +9,13 @@ from .angles import (
     parse_angle,
     to_dms,
 )
+from .arcs import (
+    MeridianPoint,
+    latitude_from_meridian_distance,
+    meridian_arc_length,
+    meridian_distance,
+    parallel_arc_length,
+)
 from .curvature import (
     azimuth_radius,
     gaussian_mean_radius,
@@ -16,6 +23,7 @@ from .curvature import (
     parallel_radius,
     prime_vertical_radius,
 )
+from .ellipse import EllipseArc, ellipse_arc, ellipse_perimeter, elliptic_e
 from .ellipsoids import (
     BESSEL_1841,
     CLARKE_1866,
