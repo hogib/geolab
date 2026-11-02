@@ -80,13 +80,13 @@ UNIT_COMPLETIONS = ["dms", "deg", "rad"]
 def completions(
     text: str,
     methods: Sequence[str] = (),
-    tab_count: int = 0,
+    tab_names: Sequence[str] = (),
     ellipsoid_names: Sequence[str] | None = None,
 ) -> list[str]:
     """Possible completions of the whole command line ``text``.
 
     ``methods`` are the option labels of the current tab's method field,
-    ``tab_count`` the number of tabs and ``ellipsoid_names`` the ellipsoids
+    ``tab_names`` the tab names and ``ellipsoid_names`` the ellipsoids
     available (default: the built-in ones).
     """
     text = text.lstrip().removeprefix(":")
@@ -108,7 +108,10 @@ def completions(
     elif name == "method":
         options = [m.lower() for m in methods if m.lower().startswith(arg.strip().lower())]
     elif name == "tab":
-        options = [str(i) for i in range(1, tab_count + 1) if str(i).startswith(arg.strip())]
+        wanted = arg.strip().lower()
+        numbers = [str(i) for i in range(1, len(tab_names) + 1)]
+        words = [n.lower() for n in tab_names if " " not in n]
+        options = [o for o in numbers + words if o.startswith(wanted)] if wanted else numbers
     else:
         options = []
     return [f"{name} {option}" for option in options]

@@ -183,3 +183,33 @@ HelpScreen .dialog Static {
     width: 1fr;
     height: auto;
 }
+
+#finder {
+    width: 56;
+}
+
+#finder-prompt {
+    height: 1;
+    margin: 0 1 1 1;
+}
+
+#finder-caret {
+    width: 2;
+    color: $accent;
+    text-style: bold;
+}
+
+#finder-input {
+    width: 1fr;
+}
+
+#finder-count {
+    width: auto;
+}
+
+#finder-list {
+    height: auto;
+    max-height: 20;
+    border: none;
+    background: $surface;
+}

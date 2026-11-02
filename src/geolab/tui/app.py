@@ -32,7 +32,8 @@ from .problems import (
     RadiiCalculator,
 )
 from .worldmap import MapTab
-from .screens import EllipsoidPicker, HelpScreen
+from .fuzzy import fuzzy_filter
+from .screens import EllipsoidPicker, Finder, HelpScreen
 from .widgets import ChoiceField, CommandLine, Form, ResultPanel, WorkingView
 
 TABS: list[tuple[str, type[Calculator]]] = [
@@ -47,6 +48,13 @@ TABS: list[tuple[str, type[Calculator]]] = [
     ("Arcs", ArcCalculator),
     ("Ellipse", EllipseArcCalculator),
 ]
+
+
+def calculator_labels() -> list[str]:
+    """What the finder searches and the header shows: each calculator's title."""
+    return [calculator.TITLE or name for name, calculator in TABS]
+
+
 UNIT_NAMES = {AngleUnit.DMS: "DMS", AngleUnit.DEGREES: "DEG", AngleUnit.RADIANS: "RAD"}
 
 
@@ -77,6 +85,7 @@ class GeolabApp(App):
         Binding("w", "toggle_working", show=False),
         Binding("u", "cycle_unit", show=False),
         Binding("e", "pick_ellipsoid", show=False),
+        Binding("t,slash", "find", show=False),
         Binding("y", "yank(False)", show=False),
         Binding("Y", "yank(True)", show=False),
         Binding("colon", "command", show=False),
@@ -194,14 +203,24 @@ class GeolabApp(App):
     # ── Rendering ────────────────────────────────────────────────────────────
 
     def _render_tabbar(self) -> None:
+        """Header: the current calculator's title and how to find another."""
         theme = self.theme_variables
-        text = Text.assemble((" geolab ", f"bold {theme['background']} on {theme['accent']}"), " ")
-        for i, (name, _) in enumerate(TABS):
-            style = f"bold {theme['background']} on {theme['primary']}" if i == self.tab else "dim"
-            key = "0" if i == 9 else str(i + 1)  # key 0 opens tab 10
-            text.append(f" {key} {name} ", style=style)
-            text.append(" ")
+        title = calculator_labels()[self.tab]
+        text = Text.assemble(
+            (" geolab ", f"bold {theme['background']} on {theme['accent']}"),
+            "  ",
+            (title, "bold"),
+        )
+        hint = Text("t find · [ ] prev/next ", style="dim")
+        width = self.query_one("#tabbar").content_size.width or self.size.width
+        gap = width - text.cell_len - hint.cell_len
+        if gap > 1:
+            text.append(" " * gap)
+            text.append_text(hint)
         self.query_one("#tabbar", Static).update(text)
+
+    def on_resize(self) -> None:
+        self._render_tabbar()
 
     def _render_status(self) -> None:
         theme = self.theme_variables
@@ -246,7 +265,7 @@ class GeolabApp(App):
             if field.key == "method" and isinstance(field, ChoiceField)
             for label, _ in field.options
         ]
-        return completions(text, methods, len(TABS), list(self.ellipsoids))
+        return completions(text, methods, [name for name, _ in TABS], list(self.ellipsoids))
 
     def on_resize(self) -> None:
         self._render_status()
@@ -304,6 +323,7 @@ class GeolabApp(App):
             self._pending_g = False
             if event.character in ("t", "T"):
                 event.stop()
+                event.prevent_default()  # don't also fire the t (tab picker) binding
                 self.action_next_tab() if event.character == "t" else self.action_prev_tab()
             return
         if event.character == "g" and not isinstance(self.focused, WorkingView):
@@ -330,6 +350,13 @@ class GeolabApp(App):
     def action_cycle_unit(self) -> None:
         units = list(AngleUnit)
         self.angle_unit = units[(units.index(self.angle_unit) + 1) % len(units)]
+
+    def action_find(self) -> None:
+        def picked(index: int | None) -> None:
+            if index is not None:
+                self.tab = index
+
+        self.push_screen(Finder(calculator_labels(), self.tab), picked)
 
     def action_pick_ellipsoid(self) -> None:
         def picked(name: str | None) -> None:
@@ -426,9 +453,16 @@ class GeolabApp(App):
         elif name in ("working", "work"):
             self.action_toggle_working()
         elif name == "tab":
-            if not args or not args[0].isdigit():
-                raise CommandError("usage: :tab <number>")
-            self.action_tab(int(args[0]) - 1)
+            if not args:
+                raise CommandError("usage: :tab <number|name>")
+            query = " ".join(args)
+            if query.isdigit():
+                self.action_tab(int(query) - 1)
+                return
+            matches = fuzzy_filter(query, calculator_labels())
+            if not matches:
+                raise CommandError(f"no calculator matching {query!r}")
+            self.action_tab(matches[0].index)
         elif name in ("help", "h"):
             self.action_help()
         else:

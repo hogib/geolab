@@ -113,7 +113,10 @@ class TestCompletions:
         assert completions("method ") == []
 
     def test_tab_numbers(self):
-        assert completions("tab ", tab_count=3) == ["tab 1", "tab 2", "tab 3"]
+        assert completions("tab ", tab_names=["Radii", "Map", "Arcs"]) == ["tab 1", "tab 2", "tab 3"]
+
+    def test_tab_names(self):
+        assert completions("tab ar", tab_names=["Radii", "Map", "Arcs"]) == ["tab arcs"]
 
     def test_commands_without_arguments(self):
         assert completions("help x") == []

@@ -2,12 +2,13 @@ from rich.table import Table
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
-from textual.containers import Vertical
+from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import OptionList, Static
+from textual.widgets import Input, OptionList, Static
 from textual.widgets.option_list import Option
 
 from ..ellipsoids import ELLIPSOIDS, Ellipsoid
+from .fuzzy import fuzzy_filter
 
 
 class VimOptionList(OptionList):
@@ -17,6 +18,81 @@ class VimOptionList(OptionList):
         Binding("g", "first", "First", show=False),
         Binding("G", "last", "Last", show=False),
     ]
+
+
+def tab_key(index: int) -> str:
+    """The key that jumps to calculator ``index`` (0-based): 1–9, then 0 for the tenth."""
+    return "0" if index == 9 else str(index + 1)
+
+
+def highlight(text: str, positions: tuple[int, ...], style: str) -> Text:
+    out = Text(text)
+    for i in positions:
+        out.stylize(style, i, i + 1)
+    return out
+
+
+class Finder(ModalScreen[int | None]):
+    """fzf-style calculator finder: type to fuzzy-filter, ↑/↓ or ctrl+n/p to move,
+    enter to open. Returns the chosen calculator's index, or None."""
+
+    BINDINGS = [
+        Binding("escape,ctrl+c", "dismiss(None)", "Cancel", show=False),
+        Binding("down,ctrl+n,ctrl+j", "move(1)", "Down", show=False),
+        Binding("up,ctrl+p,ctrl+k", "move(-1)", "Up", show=False),
+    ]
+
+    def __init__(self, labels: list[str], current: int):
+        super().__init__()
+        self.labels = labels
+        self.current = current
+
+    def compose(self) -> ComposeResult:
+        with Vertical(classes="block dialog", id="finder"):
+            with Horizontal(id="finder-prompt"):
+                yield Static("> ", id="finder-caret")
+                yield Input(compact=True, id="finder-input")
+                yield Static("", id="finder-count")
+            yield OptionList(id="finder-list")
+
+    def on_mount(self) -> None:
+        self.query_one(".dialog").border_title = "Find calculator"
+        self.query_one(".dialog").border_subtitle = "↑/↓ move · enter open · esc cancel"
+        self._fill("")
+        self.query_one(OptionList).highlighted = self.current
+        self.query_one(Input).focus()
+
+    def _fill(self, query: str) -> None:
+        options = self.query_one(OptionList)
+        options.clear_options()
+        accent = f"bold {self.app.theme_variables.get('accent', 'yellow')}"
+        matches = fuzzy_filter(query, self.labels)
+        for m in matches:
+            label = Text.assemble((f"{tab_key(m.index) if m.index < 10 else ' '} ", "dim"))
+            label.append_text(highlight(self.labels[m.index], m.positions, accent))
+            options.add_option(Option(label, id=str(m.index)))
+        if options.option_count:
+            options.highlighted = 0
+        self.query_one("#finder-count", Static).update(
+            Text(f" {len(matches)}/{len(self.labels)}", style="dim")
+        )
+
+    def on_input_changed(self, event: Input.Changed) -> None:
+        self._fill(event.value)
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        options = self.query_one(OptionList)
+        if options.highlighted is not None:
+            self.dismiss(int(options.get_option_at_index(options.highlighted).id or 0))
+
+    def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+        self.dismiss(int(event.option.id or 0))
+
+    def action_move(self, step: int) -> None:
+        options = self.query_one(OptionList)
+        if options.option_count:
+            current = options.highlighted or 0
+            options.highlighted = max(0, min(options.option_count - 1, current + step))
 
 
 class EllipsoidPicker(ModalScreen[str | None]):
@@ -74,8 +150,9 @@ HELP = [
         ("i  a  enter", "edit the selected field"),
         ("c", "clear the field and edit it"),
         ("h / l  space", "cycle an option field"),
-        ("1 – 9, 0", "switch tab (0 is tab 10)"),
-        ("gt / gT  ] / [", "next / previous tab"),
+        ("t  /", "find a calculator (fuzzy search)"),
+        ("1 – 9, 0", "jump to one of the first ten calculators"),
+        ("gt / gT  ] / [", "next / previous calculator"),
         ("tab / shift+tab", "move between Input, Result and Working"),
         ("y / Y", "copy the selected result / all results"),
         ("w", "show or hide the working"),
@@ -112,7 +189,7 @@ HELP = [
         (":method <name>", "set the method where there is one, e.g. :method bowring"),
         (":working", "show or hide the working"),
         (":save  :w", "save a custom ellipsoid (Ellipsoid tab)"),
-        (":<n>  :tab <n>", "switch to tab n"),
+        (":tab <name>", "open the best fuzzy match for name"),
         (":help  :q", "help, quit"),
     ]),
     ("Angle input", [

@@ -198,6 +198,37 @@ class TestTabs:
         await pilot.pause()
         assert pilot.app.focused is form(pilot.app)
 
+    async def test_finder_fuzzy_match(self, pilot):
+        await pilot.press("t", *"mpa", "enter")  # Meridian and PArallel arcs
+        await pilot.pause()
+        assert pilot.app.tab == 8
+
+    async def test_finder_arrows_and_slash(self, pilot):
+        await pilot.press("slash", *"ell", "down", "enter")  # Ellipsoid, then 2D ellipse
+        await pilot.pause()
+        assert pilot.app.tab == 9
+
+    async def test_finder_shows_count_and_highlights(self, pilot):
+        await pilot.press("t", *"vin")
+        await pilot.pause()
+        finder = pilot.app.screen
+        assert str(finder.query_one("#finder-count").render()).strip() == "2/10"
+        first = finder.query_one("#finder-list").get_option_at_index(0).prompt
+        assert first.plain.endswith("Inverse problem (Vincenty)")
+        assert any(span.style for span in first.spans)
+
+    async def test_finder_escape_cancels(self, pilot):
+        await pilot.press("t", *"map", "escape")
+        await pilot.pause()
+        assert pilot.app.tab == 0
+        assert pilot.app.focused is form(pilot.app)
+
+    async def test_tab_command_fuzzy(self, pilot):
+        await run(pilot, "tab map")
+        assert pilot.app.tab == 7
+        await run(pilot, "tab zzz")
+        assert pilot.app.last_message == "no calculator matching 'zzz'"
+
     async def test_missing_tab(self, pilot):
         await run(pilot, "11")
         assert pilot.app.tab == 0
@@ -516,6 +547,14 @@ class TestArcsTab:
         assert float(got["s₂  parallel arc at φ₂"]) == pytest.approx(
             parallel_arc_length(lat2, lon1, lon2, WGS84), abs=1e-4
         )
+
+
+async def test_header_shows_current_calculator(pilot):
+    header = lambda: str(pilot.app.query_one("#tabbar").render())  # noqa: E731
+    assert "Geodetic → ECEF" in header()
+    await pilot.press("4")
+    await pilot.pause()
+    assert "Inverse problem (Vincenty)" in header()
 
 
 class TestEllipseTab:

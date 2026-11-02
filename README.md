@@ -37,7 +37,7 @@ intermediate value, its formula and, for angles, both radians and DMS.
   parallel (r Δλ).
 - **Latitude from meridian arc:** given the meridian distance m from the
   equator, the latitudes φ, β, ψ and the coordinates (x, y on the meridian
-  ellipse, and X, Y, Z at a chosen longitude). On the Ellipse tab, set
+  ellipse, and X, Y, Z at a chosen longitude). In the 2D ellipse calculator, set
   `mode` to *Point*.
 - **2D ellipse arcs:** arc length, chord and perimeter on any planar ellipse
   x²/a² + y²/b² = 1, between parametric or polar angles (Carlson's elliptic
@@ -46,7 +46,7 @@ intermediate value, its formula and, for angles, both radians and DMS.
   type to *Normal φ* to enter geodetic latitudes.
 - **Angles** in DMS, decimal degrees or radians, with N/S/E/W.
 - **World map:** a braille-character map in the terminal that plots the
-  geodesics from the Inverse and Direct tabs.
+  geodesics from the Inverse and Direct calculators.
 
 ## Install and run
 
@@ -65,6 +65,10 @@ themes show through.
 
 ## Using the TUI
 
+There is one calculator on screen at a time. Press `t` (or `/`) to find
+another: type a few letters of its name, in order but not necessarily
+together (`mpa` finds *Meridian and parallel arcs*), then `Enter`.
+
 geolab works like vim: you move around in **NORMAL** mode, type into a field
 in **INSERT** mode, and run commands from the **`:`** line. Results update as
 you type. Press `?` inside the app for the full list of keys.
@@ -76,7 +80,8 @@ you type. Press `?` inside the app for the full list of keys.
 | `c` | clear the field and edit it |
 | `Esc` | back to NORMAL mode |
 | `h` / `l`, `Space` | cycle an option field (e.g. Iterative / Bowring) |
-| `1`–`9`, `0`, `gt` / `gT`, `]` / `[` | switch tab |
+| `t` or `/` | find a calculator: fuzzy search, like fzf |
+| `1`–`9`, `0`, `gt` / `gT`, `]` / `[` | jump to one of the first ten / next / previous calculator |
 | `Tab` / `Shift+Tab` | move between the Input, Result and Working blocks |
 | `y` / `Y` | copy the selected result / all results to the clipboard |
 | `w` | show or hide the working |
@@ -90,9 +95,9 @@ block they scroll, and `g`/`G` and `Ctrl+D`/`Ctrl+U` jump.
 
 ### Map
 
-Tab 8 draws a world map in braille characters (each character cell holds
-2×4 dots). It plots the geodesic from the **Inverse** tab (P₁→P₂, orange)
-and the one from the **Direct** tab (Q₁→Q₂, blue), each sampled from the
+The **Map** calculator draws a world map in braille characters (each character cell holds
+2×4 dots). It plots the geodesic from the **Inverse** calculator (P₁→P₂, orange)
+and the one from the **Direct** calculator (Q₁→Q₂, blue), each sampled from the
 ellipsoidal solution rather than drawn as a straight line. Use the `show`
 option to pick one or both, and `grid` to toggle the lat/lon grid.
 
@@ -115,10 +120,10 @@ through the matches.
 |---|---|
 | `:ell <name>` | set the ellipsoid, e.g. `:ell grs80`. Any unambiguous prefix works; with no name it opens the picker |
 | `:units dms\|deg\|rad` | set the angle units |
-| `:method <name>` | set the method on tabs that have one, e.g. `:method bowring` |
+| `:method <name>` | set the method on calculators that have one, e.g. `:method bowring` |
 | `:working` | show or hide the working |
-| `:save`, `:w` | save a custom ellipsoid (Ellipsoid tab) |
-| `:3`, `:tab 3` | switch to tab 3 |
+| `:save`, `:w` | save a custom ellipsoid (Ellipsoid calculator) |
+| `:tab <name>`, `:3` | open the best fuzzy match for name, or calculator 3 |
 | `:help`, `:q` | help, quit |
 
 ### Entering angles
@@ -135,7 +140,7 @@ is highlighted and the reason is shown in the Result block.
 
 ### Custom ellipsoids
 
-On the **Ellipsoid** tab, edit the name, `a` and `1/f`. The derived values
+In the **Ellipsoid** calculator, edit the name, `a` and `1/f`. The derived values
 update as you type. Press `s` to save the ellipsoid and switch to it. Custom
 ellipsoids are stored in `~/.config/geolab/ellipsoids.toml` (or under
 `$XDG_CONFIG_HOME`), which you can also edit by hand:
