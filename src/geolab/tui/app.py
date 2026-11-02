@@ -23,6 +23,7 @@ from .commands import (
     split_command,
 )
 from .convert import EcefToGeodetic, GeodeticToEcef, LatitudeConverter
+from .datum_tab import DatumCalculator
 from .ellipsoid_tab import EllipsoidEditor
 from .problems import (
     ArcCalculator,
@@ -47,6 +48,7 @@ TABS: list[tuple[str, type[Calculator]]] = [
     ("Map", MapTab),
     ("Arcs", ArcCalculator),
     ("Ellipse", EllipseArcCalculator),
+    ("Datum", DatumCalculator),
 ]
 
 

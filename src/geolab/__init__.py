@@ -23,6 +23,7 @@ from .curvature import (
     parallel_radius,
     prime_vertical_radius,
 )
+from .datum import HelmertParams, helmert, helmert_inverse, transform_geodetic
 from .ellipse import EllipseArc, ellipse_arc, ellipse_perimeter, elliptic_e
 from .ellipsoids import (
     BESSEL_1841,

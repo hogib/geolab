@@ -39,6 +39,11 @@ intermediate value, its formula and, for angles, both radians and DMS.
   equator, the latitudes φ, β, ψ and the coordinates (x, y on the meridian
   ellipse, and X, Y, Z at a chosen longitude). In the 2D ellipse calculator, set
   `mode` to *Point*.
+- **Datum transformation:** the 7-parameter Helmert transformation between
+  TUTGA-99 (GRS80) and ED-50 (Hayford), in either direction, from φ, λ, h.
+  The parameters are entered as published (m, arc seconds, ppm); the
+  defaults ΔX, ΔY, ΔZ = 87, 98, 121 m are only a rough ED-50 shift, so
+  enter the official ones for real work.
 - **2D ellipse arcs:** arc length, chord and perimeter on any planar ellipse
   x²/a² + y²/b² = 1, between parametric or polar angles (Carlson's elliptic
   integrals, so any eccentricity works). Set `a, b from` to *Ellipsoid* to

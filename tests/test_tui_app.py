@@ -11,6 +11,7 @@ from geolab import (  # noqa: E402
     AngleUnit,
     Ellipsoid,
     Geodetic,
+    HelmertParams,
     direct,
     ellipse_perimeter,
     gaussian_mean_radius,
@@ -21,9 +22,10 @@ from geolab import (  # noqa: E402
     meridian_radius,
     parallel_arc_length,
     parse_angle,
+    transform_geodetic,
 )
 from geolab.config import save_ellipsoids  # noqa: E402
-from geolab.tui.app import GeolabApp, Mode  # noqa: E402
+from geolab.tui.app import TABS, GeolabApp, Mode  # noqa: E402
 from geolab.tui.screens import EllipsoidPicker, HelpScreen  # noqa: E402
 from geolab.tui.widgets import (  # noqa: E402
     ChoiceField,
@@ -183,7 +185,7 @@ class TestTabs:
 
     async def test_brackets_wrap(self, pilot):
         await pilot.press("left_square_bracket")
-        assert pilot.app.tab == 9
+        assert pilot.app.tab == len(TABS) - 1
         await pilot.press("right_square_bracket")
         assert pilot.app.tab == 0
 
@@ -212,7 +214,7 @@ class TestTabs:
         await pilot.press("t", *"vin")
         await pilot.pause()
         finder = pilot.app.screen
-        assert str(finder.query_one("#finder-count").render()).strip() == "2/10"
+        assert str(finder.query_one("#finder-count").render()).strip() == f"2/{len(TABS)}"
         first = finder.query_one("#finder-list").get_option_at_index(0).prompt
         assert first.plain.endswith("Inverse problem (Vincenty)")
         assert any(span.style for span in first.spans)
@@ -230,9 +232,9 @@ class TestTabs:
         assert pilot.app.last_message == "no calculator matching 'zzz'"
 
     async def test_missing_tab(self, pilot):
-        await run(pilot, "11")
+        await run(pilot, "99")
         assert pilot.app.tab == 0
-        assert pilot.app.last_message == "no tab 11"
+        assert pilot.app.last_message == "no tab 99"
 
 
 class TestChoiceField:
@@ -638,6 +640,19 @@ class TestEllipseTab:
         await pilot.pause()
         assert "quarter meridian" in results(pilot.app).message
         assert results(pilot.app).has_class("-error")
+
+
+class TestDatumCalculator:
+    async def test_matches_core_and_round_trips(self, pilot):
+        await run(pilot, "tab datum")
+        lat, lon = parse_angle("41 00 30 N"), parse_angle("29 E")
+        params = HelmertParams.from_units(87, 98, 121)
+        expected = transform_geodetic(Geodetic(lat, lon, 150.0), GRS80, HAYFORD, params)
+        got = values(pilot.app)
+        assert float(got["h   on Hayford"]) == pytest.approx(expected.height, abs=1e-4)
+        await pilot.press("l")  # ED-50 → TUTGA-99 with the same parameters
+        await pilot.pause()
+        assert "h   on GRS80" in values(pilot.app)
 
 
 class TestEllipsoidTab:
