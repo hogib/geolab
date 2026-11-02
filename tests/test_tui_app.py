@@ -758,6 +758,25 @@ class TestShortLinesCalculator:
         assert abs(float(got["λ₂ − Vincenty (″)"])) < 1e-4
 
 
+class TestTriangleCalculator:
+    async def test_course_example(self, pilot):
+        await run(pilot, "ell bessel")
+        await run(pilot, "tab triangles")
+        got = values(pilot.app)
+        assert float(got["a   P₂P₃"]) == pytest.approx(36594.4366, abs=1e-3)
+        assert float(got["ε   spherical excess (″)"]) == pytest.approx(4.1667, abs=1e-3)
+        assert abs(float(got["Legendre − exact a (mm)"])) < 0.1
+
+    async def test_plane_sss(self, pilot):
+        await run(pilot, "tab triangles")
+        await pilot.press("l", "l", "j", "l")  # KKK, plane
+        await pilot.pause()
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "surface", "lat", "a", "b", "c"]
+        got = values(pilot.app)
+        assert "ε   spherical excess (″)" not in got
+        assert float(got["F   area (m²)"]) > 0
+
+
 class TestEllipsoidTab:
     async def test_shows_current_ellipsoid(self, pilot):
         await pilot.press("7")

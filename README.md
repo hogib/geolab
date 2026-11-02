@@ -54,6 +54,11 @@ intermediate value, its formula and, for angles, both radians and DMS.
 - **Short lines:** the direct and inverse problems by Legendre's series and
   by Gauss's mid-latitude formulas (as in the course), each compared with
   Vincenty. Defaults to the course's Bessel-ellipsoid example.
+- **Triangles:** plane and spherical triangles from two angles and the side
+  between them, two sides and the angle between them, or three sides. The
+  spherical ones use the Gauss sphere R = √(MN) and give the spherical
+  excess; for small geodetic triangles, Legendre's theorem and Soldner's
+  additament method are shown next to the exact solution.
 - **Geodesic curve:** Clairaut's constant N cos φ sin α, the highest
   latitude a geodesic reaches and its azimuths at any latitude; the azimuth
   and length differences between the geodesic and the normal sections, and
