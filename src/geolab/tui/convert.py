@@ -1,4 +1,5 @@
 from ..angles import AngleKind
+from ..meridian_ellipse import meridian_ellipse_point
 from ..point import Cartesian3D, Geodetic, GeodeticMethod, Latitude, LatType
 from ..trace import Trace
 from .calculator import Calculator
@@ -49,7 +50,7 @@ class EcefToGeodetic(Calculator):
 
 
 class LatitudeConverter(Calculator):
-    TITLE = "Latitude types"
+    TITLE = "Latitude types and meridian ellipse"
 
     def fields(self) -> list[Field]:
         return [
@@ -66,4 +67,12 @@ class LatitudeConverter(Calculator):
             result = source.convert_to(target, self.geolab.ellipsoid, trace)
             label = f"{LAT_SYMBOLS[target]}  {target.name.lower()}"
             rows.append(self.angle_row(label, result.value, AngleKind.LAT))
+        pt = meridian_ellipse_point(source.value, source.lat_type, self.geolab.ellipsoid, trace)
+        rows += [
+            self.length_row("p   meridian ellipse", pt.p),
+            self.length_row("z   meridian ellipse", pt.z),
+            self.length_row("r   geocentric radius", pt.r),
+            self.value_row("w   √(1 − e² sin²φ)", pt.w),
+            self.value_row("v   √(1 + e′² cos²φ)", pt.v),
+        ]
         return rows

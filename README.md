@@ -29,7 +29,9 @@ intermediate value, its formula and, for angles, both radians and DMS.
   b, f, e², e′², n and the mean, authalic and volumetric radii.
 - **Geodetic → ECEF** and **ECEF → geodetic**, the reverse by iteration or by
   Bowring's closed-form method.
-- **Latitude types:** geodetic φ, geocentric ψ and parametric (reduced) β.
+- **Latitude types:** geodetic φ, geocentric ψ and parametric (reduced) β,
+  and the point's meridian-ellipse coordinates p, z, geocentric radius r and
+  the auxiliary quantities w, v.
 - **Inverse and direct problems:** Vincenty (1975).
 - **Radii of curvature:** meridian M, prime vertical N, parallel r, Gaussian
   mean R, and the normal section in any azimuth (Euler).

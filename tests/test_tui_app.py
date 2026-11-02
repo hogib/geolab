@@ -416,7 +416,7 @@ class TestLatitudeTab:
     async def test_all_three_types(self, pilot):
         await pilot.press("3", "u")
         await pilot.pause()
-        values = {k: float(v.rstrip("°")) for k, v in rows(pilot.app).items()}
+        values = {k: float(v.rstrip("°")) for k, v in rows(pilot.app).items() if v.endswith("°")}
         phi = math.radians(41 + 30 / 3600)
         assert values["φ  geodetic"] == pytest.approx(41.00833333, abs=1e-8)
         assert values["ψ  geocentric"] == pytest.approx(
@@ -425,6 +425,14 @@ class TestLatitudeTab:
         assert values["β  parametric"] == pytest.approx(
             math.degrees(math.atan(math.sqrt(1 - WGS84.e_sq) * math.tan(phi))), abs=1e-8
         )
+
+    async def test_meridian_ellipse_coordinates_course_example(self, pilot):
+        await run(pilot, "ell hayford")
+        await pilot.press("3", "c", *"35 20 40", "escape")
+        await pilot.pause()
+        got = values(pilot.app)
+        assert float(got["p   meridian ellipse"]) == pytest.approx(5208643.936, abs=2e-3)
+        assert float(got["z   meridian ellipse"]) == pytest.approx(3669161.169, abs=2e-3)
 
 
 class TestCompletion:
