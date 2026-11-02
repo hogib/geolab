@@ -41,7 +41,12 @@ intermediate value, its formula and, for angles, both radians and DMS.
 - **Arc lengths:** along a meridian (Helmert's series in n) and along a
   parallel (r Δλ). The reverse too: the latitude reached after a given arc
   along a meridian (same longitude), or the longitude after a given arc along
-  a parallel (same latitude); set `mode` in the arcs calculator.
+  a parallel (same latitude); set `mode` in the arcs calculator. The arcs
+  are also computed with the course's series in e′² (E₀…E₈, F₂…F₆) and the
+  short-arc formula, for comparison.
+- **Areas:** between two parallels (a zone), between two meridians and two
+  parallels (e.g. a 1:25 000 map sheet, the default), and of the whole
+  ellipsoid, with the α…ζ series to e¹⁰.
 - **Latitude from meridian arc:** given the meridian distance m from the
   equator, the latitudes φ, β, ψ and the coordinates (x, y on the meridian
   ellipse, and X, Y, Z at a chosen longitude). In the 2D ellipse calculator, set

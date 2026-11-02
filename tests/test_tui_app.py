@@ -26,6 +26,7 @@ from geolab import (  # noqa: E402
     parse_angle,
     transform_geodetic,
 )
+from geolab.area import quadrangle_area  # noqa: E402
 from geolab.config import save_ellipsoids  # noqa: E402
 from geolab.tui.app import TABS, GeolabApp, Mode  # noqa: E402
 from geolab.tui.screens import EllipsoidPicker, HelpScreen  # noqa: E402
@@ -707,6 +708,18 @@ class TestDatumCalculator:
         await pilot.press("l")  # ED-50 → TUTGA-99 with the same parameters
         await pilot.pause()
         assert "h   on GRS80" in values(pilot.app)
+
+
+class TestAreaCalculator:
+    async def test_map_sheet(self, pilot):
+        await run(pilot, "ell hayford")
+        await run(pilot, "tab area")
+        lat1, lat2 = parse_angle("39 N"), parse_angle("39 07 30 N")
+        lon1, lon2 = parse_angle("29 E"), parse_angle("29 07 30 E")
+        got = values(pilot.app)
+        assert float(got["P   quadrangle (m²)"]) == pytest.approx(
+            quadrangle_area(lat1, lat2, lon1, lon2, HAYFORD), rel=1e-12
+        )
 
 
 class TestEllipsoidTab:

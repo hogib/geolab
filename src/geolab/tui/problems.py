@@ -7,7 +7,9 @@ from ..arcs import (
     longitude_from_parallel_arc,
     meridian_arc_length,
     meridian_distance,
+    meridian_distance_series,
     parallel_arc_length,
+    short_meridian_arc,
 )
 from ..curvature import (
     azimuth_radius,
@@ -166,8 +168,14 @@ class ArcCalculator(Calculator):
         parallel1 = parallel_arc_length(lat1, lon1, lon2, ell, trace)
         trace.section("Parallel arc at φ₂")
         parallel2 = parallel_arc_length(lat2, lon1, lon2, ell, trace)
+        trace.section("Course series in e′² (G at φ₁, then at φ₂)")
+        series = abs(meridian_distance_series(lat2, ell, trace) - meridian_distance_series(lat1, ell, trace))
+        trace.section("Short meridian arc (mean latitude)")
+        short = abs(short_meridian_arc(lat1, lat2, ell, trace))
         return [
             self.length_row("Δm  meridian arc φ₁→φ₂", meridian),
+            self.length_row("ΔG  course e′² series", series),
+            self.length_row("ΔG  short-arc formula", short),
             self.length_row("s₁  parallel arc at φ₁", parallel1),
             self.length_row("s₂  parallel arc at φ₂", parallel2),
             self.length_row("m₁  equator → φ₁", meridian_distance(lat1, ell)),

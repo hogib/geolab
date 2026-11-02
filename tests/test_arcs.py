@@ -2,6 +2,12 @@ import math
 
 import pytest
 
+from geolab.arcs import (
+    latitude_from_meridian_distance_series,
+    meridian_distance_series,
+    meridian_series,
+    short_meridian_arc,
+)
 from geolab import (
     GRS80,
     HAYFORD,
@@ -169,3 +175,49 @@ class TestLongitudeFromParallelArc:
     def test_pole_is_an_error(self):
         with pytest.raises(ValueError):
             longitude_from_parallel_arc(math.pi / 2, 0.0, 1.0, WGS84)
+
+
+class TestCourseMeridianSeries:
+    """The e′² series and the Hayford tables from the course (Schödlbauer)."""
+
+    def test_hayford_coefficient_table(self):
+        s = meridian_series(HAYFORD)
+        per_degree = math.pi / 180
+        assert s.e0 * per_degree == pytest.approx(111136.536655, abs=2e-6)
+        assert s.e2 == pytest.approx(-16107.03468, abs=1e-4)
+        assert s.e4 == pytest.approx(16.97621, abs=2e-5)
+        assert s.e6 == pytest.approx(-0.02227, abs=1e-5)
+        assert abs(s.e8) == pytest.approx(0.00003, abs=5e-6)  # the slide prints it as negative
+        assert s.a_ == pytest.approx(0.994955870655, abs=1e-10)
+        assert s.b_ == pytest.approx(0.005033498193, abs=2e-11)
+        assert s.c_ == pytest.approx(0.000010610237, abs=1e-11)
+        assert s.d_ == pytest.approx(0.000000020874, abs=1e-11)
+        assert s.a_ + s.b_ + s.c_ + s.d_ + s.e_ == pytest.approx(1.0, abs=1e-15)
+        assert s.f2 / per_degree == pytest.approx(0.144930071, abs=1e-9)
+        assert s.f4 / per_degree == pytest.approx(0.000213851, abs=1e-9)
+        assert s.f6 / per_degree == pytest.approx(0.000000432, abs=1e-9)
+
+    @pytest.mark.parametrize("deg", [-45, 1, 30, 41.0083, 60, 89, 90])
+    def test_series_matches_exact_meridian_distance(self, deg):
+        lat = math.radians(deg)
+        assert meridian_distance_series(lat, HAYFORD) == pytest.approx(
+            meridian_distance(lat, HAYFORD), abs=2e-4  # truncated at e′⁸
+        )
+
+    @pytest.mark.parametrize("deg", [-45, 1, 30, 41.0083, 60, 89])
+    def test_inverse_series(self, deg):
+        lat = math.radians(deg)
+        g = meridian_distance(lat, HAYFORD)
+        assert latitude_from_meridian_distance_series(g, HAYFORD) == pytest.approx(lat, abs=5e-11)
+
+    def test_short_meridian_arc(self):
+        lat1, lat2 = math.radians(40.5), math.radians(41.3)
+        assert short_meridian_arc(lat1, lat2, HAYFORD) == pytest.approx(
+            meridian_distance(lat2, HAYFORD) - meridian_distance(lat1, HAYFORD), abs=1e-4
+        )
+        assert short_meridian_arc(lat2, lat1, HAYFORD) < 0
+
+    def test_trace(self):
+        trace = Trace()
+        g = meridian_distance_series(0.7, HAYFORD, trace)
+        assert trace["G"] == g
