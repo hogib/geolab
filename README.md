@@ -62,6 +62,10 @@ intermediate value, its formula and, for angles, both radians and DMS.
 - **Soldner coordinates:** geodetic rectangular x, y about a central
   meridian, to and from φ, λ with the meridian convergence γ, and the direct
   and inverse problems in x, y.
+- **Projection theory:** Tissot's indicatrix from the principal scales m₁,
+  m₂ (scale and image in any direction, largest angle distortion ω, area
+  scale), the isometric latitude q exactly and by the course's Δq ↔ Δφ
+  series about φ₀, and the Mercator projection of the sphere.
 - **Geodesic curve:** Clairaut's constant N cos φ sin α, the highest
   latitude a geodesic reaches and its azimuths at any latitude; the azimuth
   and length differences between the geodesic and the normal sections, and

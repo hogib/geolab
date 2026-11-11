@@ -796,6 +796,20 @@ class TestSoldnerCalculator:
         assert "S   distance" in values(pilot.app)
 
 
+class TestProjectionCalculator:
+    async def test_tissot_default(self, pilot):
+        await run(pilot, "tab projections")
+        got = values(pilot.app)
+        assert float(got["Φ   area scale m₁m₂"]) == pytest.approx(1.08)
+
+    async def test_isometric_series_close_to_exact(self, pilot):
+        await run(pilot, "tab projections")
+        await pilot.press("l")
+        await pilot.pause()
+        assert [f.key for f in form(pilot.app).fields] == ["mode", "lat", "lat0"]
+        assert abs(float(values(pilot.app)["series − exact"])) < 1e-10
+
+
 class TestEllipsoidTab:
     async def test_shows_current_ellipsoid(self, pilot):
         await pilot.press("7")
