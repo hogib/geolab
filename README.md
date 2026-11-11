@@ -76,6 +76,12 @@ intermediate value, its formula and, for angles, both radians and DMS.
   traverse between known points (A-B … C-D) with ellipsoidal angles and
   sides, reduced to the plane and adjusted. List fields take items
   separated by `;`, e.g. `4500000 40000; 4500000 60000; …`.
+- **Zones and map sheets:** 3° zones (m₀ = 1) and 6° UTM zones
+  (m₀ = 0.9996): zone number, central meridian, grid coordinates (sağa and
+  yukarı değer, optionally with the zone in front) both ways, and
+  zone-to-zone transformation. The Turkish map-sheet names from 1/100 000
+  (e.g. G25) down to 1/500 (G25-d-01-d-1-a-2) for any point, and the
+  corners of any sheet with their grid coordinates.
 - **Geodesic curve:** Clairaut's constant N cos φ sin α, the highest
   latitude a geodesic reaches and its azimuths at any latitude; the azimuth
   and length differences between the geodesic and the normal sections, and

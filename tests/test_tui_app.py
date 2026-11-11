@@ -29,6 +29,7 @@ from geolab import (  # noqa: E402
 from geolab.area import quadrangle_area  # noqa: E402
 from geolab.config import save_ellipsoids  # noqa: E402
 from geolab.gauss_kruger import krueger_forward  # noqa: E402
+from geolab.map_sheets import sheet_corner_coordinates, sheet_from_name  # noqa: E402
 from geolab.soldner import soldner_from_geodetic  # noqa: E402
 from geolab.tui.app import TABS, GeolabApp, Mode  # noqa: E402
 from geolab.tui.screens import EllipsoidPicker, HelpScreen  # noqa: E402
@@ -849,6 +850,24 @@ class TestReductionsCalculator:
         text_field(pilot.app, "polygon").value = "1 2; 3"
         await pilot.pause()
         assert results(pilot.app).rows == [] or "F   ellipsoid area (m²)" not in values(pilot.app)
+
+
+class TestZonesCalculator:
+    async def test_grid_and_sheets(self, pilot):
+        await run(pilot, "tab zones")
+        got = values(pilot.app)
+        assert got["zone"] == "10"
+        assert got["sheet 1/5000"] == "G25-d-01-d"
+        assert got["sheet 1/500"].startswith("G25-d-01-d-")
+
+    async def test_sheet_corners(self, pilot):
+        await run(pilot, "tab zones")
+        await pilot.press("h")  # wraps to Sheet → corners
+        await pilot.pause()
+        got = values(pilot.app)
+        assert got["scale"] == "1/5000"
+        corners = sheet_corner_coordinates(sheet_from_name("G25-d-01-d"), WGS84, 3)
+        assert float(got["A  sağa"]) == pytest.approx(corners["A"].easting, abs=1e-3)
 
 
 class TestEllipsoidTab:

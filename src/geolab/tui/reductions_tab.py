@@ -47,19 +47,19 @@ class ReductionsCalculator(Calculator):
             NumberField("s", "S   geodesic length (m)", "32015.1846"),
             PointListField(
                 "polygon",
-                "vertices X Y; X Y; …",
+                "vertices X Y; …",
                 "4500000 40000; 4500000 60000; 4503000 60000; 4503000 40000",
             ),
-            PointField("a", "A  X Y (orientation)", "4485437.913 76291.485"),
-            PointField("b", "B  X Y (start)", "4487703.294 80506.038"),
-            PointField("c", "C  X Y (end)", "4492325.145 95703.152"),
-            PointField("d", "D  X Y (orientation)", "4495689.644 98200.120"),
+            PointField("a", "A  X Y", "4485437.913 76291.485"),
+            PointField("b", "B  X Y start", "4487703.294 80506.038"),
+            PointField("c", "C  X Y end", "4492325.145 95703.152"),
+            PointField("d", "D  X Y", "4495689.644 98200.120"),
             AngleListField(
                 "angles",
-                "β₀; β₁; …  (at B, new points, C)",
+                "β  angles B…C",
                 "192 56 19.27; 168 28 56.24; 198 40 38.58; 169 17 30.31; 145 27 01.72",
             ),
-            NumberListField("sides", "S₁; S₂; …  (m)", "4379.919; 3776.054; 4271.635; 3565.283"),
+            NumberListField("sides", "S  sides (m)", "4379.919; 3776.054; 4271.635; 3565.283"),
         ]
 
     def calculate(self, trace: Trace) -> list[ResultRow]:

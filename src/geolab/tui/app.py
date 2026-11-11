@@ -32,6 +32,7 @@ from .reductions_tab import ReductionsCalculator
 from .short_lines_tab import ShortLinesCalculator
 from .projection_tab import ProjectionCalculator
 from .soldner_tab import SoldnerCalculator
+from .zones_tab import ZonesCalculator
 from .triangle_tab import TriangleCalculator
 from .problems import (
     ArcCalculator,
@@ -65,6 +66,7 @@ TABS: list[tuple[str, type[Calculator]]] = [
     ("Projections", ProjectionCalculator),
     ("Gauss-Krüger", GaussKrugerCalculator),
     ("Reductions", ReductionsCalculator),
+    ("Zones", ZonesCalculator),
 ]
 
 
