@@ -70,6 +70,12 @@ intermediate value, its formula and, for angles, both radians and DMS.
   series (aₖ forward, foot-point bₖ inverse), with the length and area
   distortion m, m² and the grid convergence c; the direct and inverse
   problems in X, Y. Each conversion is compared with Krüger's n⁶ series.
+- **Gauss–Krüger reductions:** the length and bearing reductions between a
+  geodesic (S, T) and its plane chord (s, t), the two main problems solved
+  through them, the ellipsoid area of a polygon given in X, Y, and a
+  traverse between known points (A-B … C-D) with ellipsoidal angles and
+  sides, reduced to the plane and adjusted. List fields take items
+  separated by `;`, e.g. `4500000 40000; 4500000 60000; …`.
 - **Geodesic curve:** Clairaut's constant N cos φ sin α, the highest
   latitude a geodesic reaches and its azimuths at any latitude; the azimuth
   and length differences between the geodesic and the normal sections, and

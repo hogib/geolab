@@ -827,6 +827,30 @@ class TestGaussKrugerCalculator:
         assert "S   geodesic length" in values(pilot.app)
 
 
+class TestReductionsCalculator:
+    async def test_line_default(self, pilot):
+        await run(pilot, "tab reductions")
+        got = values(pilot.app)
+        assert float(got["S   geodesic length"]) < float(got["s   plane distance"])
+
+    async def test_traverse_default_closes(self, pilot):
+        await run(pilot, "tab reductions")
+        await pilot.press("h")  # wraps to Traverse
+        await pilot.pause()
+        got = values(pilot.app)
+        assert abs(float(got["w_β angle misclosure (″)"])) < 0.05
+        assert float(got["X1"]) == pytest.approx(4488860.620, abs=0.01)
+        assert float(got["Y3"]) == pytest.approx(92329.102, abs=0.01)
+
+    async def test_bad_list_shows_error(self, pilot):
+        await run(pilot, "tab reductions")
+        await pilot.press("l", "l")  # Area
+        await pilot.pause()
+        text_field(pilot.app, "polygon").value = "1 2; 3"
+        await pilot.pause()
+        assert results(pilot.app).rows == [] or "F   ellipsoid area (m²)" not in values(pilot.app)
+
+
 class TestEllipsoidTab:
     async def test_shows_current_ellipsoid(self, pilot):
         await pilot.press("7")

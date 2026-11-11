@@ -28,6 +28,7 @@ from .datum_tab import DatumCalculator
 from .ellipsoid_tab import EllipsoidEditor
 from .gauss_kruger_tab import GaussKrugerCalculator
 from .geodesic_tab import GeodesicCurveCalculator
+from .reductions_tab import ReductionsCalculator
 from .short_lines_tab import ShortLinesCalculator
 from .projection_tab import ProjectionCalculator
 from .soldner_tab import SoldnerCalculator
@@ -63,6 +64,7 @@ TABS: list[tuple[str, type[Calculator]]] = [
     ("Soldner", SoldnerCalculator),
     ("Projections", ProjectionCalculator),
     ("Gauss-Krüger", GaussKrugerCalculator),
+    ("Reductions", ReductionsCalculator),
 ]
 
 

@@ -122,6 +122,51 @@ class StringField(TextField):
         return text.strip()
 
 
+def _items(text: str) -> list[str]:
+    return [item.strip() for item in text.split(";") if item.strip()]
+
+
+def _point(text: str) -> tuple[float, float]:
+    parts = text.replace(",", " ").split()
+    if len(parts) != 2:
+        raise ValueError(f"{text!r} is not 'X Y'")
+    try:
+        return float(parts[0]), float(parts[1])
+    except ValueError:
+        raise ValueError(f"{text!r} is not 'X Y'") from None
+
+
+class PointField(TextField):
+    """Plane coordinates entered as "X Y"."""
+
+    def parse_value(self, text: str) -> tuple[float, float]:
+        return _point(text)
+
+
+class PointListField(TextField):
+    """Plane points entered as "X Y; X Y; …"."""
+
+    def parse_value(self, text: str) -> list[tuple[float, float]]:
+        return [_point(item) for item in _items(text)]
+
+
+class NumberListField(TextField):
+    """Numbers separated by ";"."""
+
+    def parse_value(self, text: str) -> list[float]:
+        try:
+            return [float(item) for item in _items(text)]
+        except ValueError as exc:
+            raise ValueError(f"not a list of numbers ({exc})") from None
+
+
+class AngleListField(TextField):
+    """Angles separated by ";", each in any format ``parse_angle`` accepts."""
+
+    def parse_value(self, text: str) -> list[float]:
+        return [parse_angle(item) for item in _items(text)]
+
+
 class ChoiceField(Field):
     """A field with a fixed set of options, cycled with h/l."""
 
