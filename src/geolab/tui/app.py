@@ -26,6 +26,7 @@ from .convert import EcefToGeodetic, GeodeticToEcef, LatitudeConverter
 from .area_tab import AreaCalculator
 from .datum_tab import DatumCalculator
 from .ellipsoid_tab import EllipsoidEditor
+from .gauss_kruger_tab import GaussKrugerCalculator
 from .geodesic_tab import GeodesicCurveCalculator
 from .short_lines_tab import ShortLinesCalculator
 from .projection_tab import ProjectionCalculator
@@ -61,6 +62,7 @@ TABS: list[tuple[str, type[Calculator]]] = [
     ("Triangles", TriangleCalculator),
     ("Soldner", SoldnerCalculator),
     ("Projections", ProjectionCalculator),
+    ("Gauss-Krüger", GaussKrugerCalculator),
 ]
 
 

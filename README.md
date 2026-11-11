@@ -66,6 +66,10 @@ intermediate value, its formula and, for angles, both radians and DMS.
   m₂ (scale and image in any direction, largest angle distortion ω, area
   scale), the isometric latitude q exactly and by the course's Δq ↔ Δφ
   series about φ₀, and the Mercator projection of the sphere.
+- **Gauss–Krüger:** φ, λ ↔ X, Y about a central meridian by the course's
+  series (aₖ forward, foot-point bₖ inverse), with the length and area
+  distortion m, m² and the grid convergence c; the direct and inverse
+  problems in X, Y. Each conversion is compared with Krüger's n⁶ series.
 - **Geodesic curve:** Clairaut's constant N cos φ sin α, the highest
   latitude a geodesic reaches and its azimuths at any latitude; the azimuth
   and length differences between the geodesic and the normal sections, and
